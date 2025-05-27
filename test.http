@@ -1,0 +1,11 @@
+### Test Server
+GET http://localhost:5000/test
+
+### Register User
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "phone": "1234567890",
+  "name": "Test User"
+}
