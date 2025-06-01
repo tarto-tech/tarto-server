@@ -25,6 +25,8 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 // In server.js, add this line with the other routes
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
+const packageRoutes = require('./routes/packages'); 
+
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -34,6 +36,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes); 
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
+app.use('/api/packages', packageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

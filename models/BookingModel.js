@@ -34,6 +34,13 @@ const paymentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const bookingSchema = new mongoose.Schema({
+
+  packageId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Package',
+    required: true
+  },
+
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
