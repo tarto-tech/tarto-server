@@ -6,22 +6,31 @@ const Package = require('../models/package');
 // Get all packages or filter by address
 router.get('/', async (req, res) => {
   try {
-    const { address } = req.query;
+    const { lat, lng } = req.query;
     
-    let query = {};
-    if (address) {
-      // Search for packages available in the given location
-      // This uses a text search on availableLocations
-      query = { 
-        $or: [
-          { availableLocations: { $regex: new RegExp(address, 'i') } },
-          // Add a fallback to return all packages if none match the location
-          ...(await Package.countDocuments({ availableLocations: { $regex: new RegExp(address, 'i') } }) === 0 ? [{}] : [])
-        ]
-      };
+    let packages = [];
+    
+    if (lat && lng) {
+      // Convert lat/lng to numbers
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      
+      // Search for packages within 30km radius
+      packages = await Package.find({
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude] // MongoDB uses [lng, lat] order
+            },
+            $maxDistance: 30000 // 30km in meters
+          }
+        }
+      });
+    } else {
+      // If no lat/lng provided, return all packages
+      packages = await Package.find();
     }
-    
-    const packages = await Package.find(query);
     
     res.status(200).json({
       success: true,

@@ -32,8 +32,7 @@ const packageSchema = new mongoose.Schema({
     required: true
   },
   availableLocations: [{
-    type: String,
-    required: true
+    type: String
   }],
   createdAt: {
     type: Date,
@@ -42,8 +41,20 @@ const packageSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
-});
+  },
+   location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+}
+}
+);
 
 const Package = mongoose.model('Package', packageSchema);
 
