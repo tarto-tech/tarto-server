@@ -1,61 +1,66 @@
-// models/package.js
+// models/packageModel.js
 const mongoose = require('mongoose');
 
 const packageSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
+    required: [true, 'Package title is required'],
     trim: true
   },
   description: {
     type: String,
-    required: true
+    required: [true, 'Package description is required']
   },
   price: {
     type: Number,
-    required: true
+    required: [true, 'Package price is required']
   },
   imageUrl: {
     type: String,
-    required: true
+    required: [true, 'Package image URL is required']
   },
-  places: [{
-    type: String,
-    required: true
-  }],
+  places: {
+    type: [String],
+    default: []
+  },
   amenities: {
     type: Map,
-    of: String
+    of: String,
+    default: {}
   },
   duration: {
     type: Number,
-    required: true
+    required: [true, 'Package duration is required']
   },
-  availableLocations: [{
-    type: String
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
+  availableLocations: {
+    type: [String],
+    default: []
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
-   location: {
+  location: {
     type: {
       type: String,
       enum: ['Point'],
       default: 'Point'
     },
     coordinates: {
-      type: [Number], // [longitude, latitude]
+      type: [Number],
       required: true
     }
-}
-}
-);
+  },
+  // Add these new fields
+  totalSeats: {
+    type: Number,
+    default: 30
+  },
+  availableSeats: {
+    type: Number,
+    default: 30
+  }
+}, {
+  timestamps: true
+});
 
-const Package = mongoose.model('Package', packageSchema);
+// Add geospatial index for location-based queries
+packageSchema.index({ location: '2dsphere' });
 
-module.exports = Package;
+module.exports = mongoose.model('Package', packageSchema);

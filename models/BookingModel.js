@@ -55,6 +55,15 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Vehicle',
     required: true
   },
+    pickupAddress: {
+    type: String,
+    required: true
+  },
+  seats: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
   source: locationSchema,
   destination: locationSchema,
   stops: [locationSchema],
