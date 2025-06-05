@@ -35,12 +35,7 @@ const paymentSchema = new mongoose.Schema({
 
 const bookingSchema = new mongoose.Schema({
 
-  packageId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Package',
-    required: true
-  },
-
+  
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -55,15 +50,8 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Vehicle',
     required: true
   },
-    pickupAddress: {
-    type: String,
-    required: true
-  },
-  seats: {
-    type: Number,
-    default: 1,
-    min: 1
-  },
+   
+  
   source: locationSchema,
   destination: locationSchema,
   stops: [locationSchema],
