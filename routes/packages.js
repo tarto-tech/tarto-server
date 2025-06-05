@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
 });
 
 
-router.post('/book',auth, async (req, res) => {
+router.post('/book', async (req, res) => {
   try {
     console.log('Request body:', req.body);
     
