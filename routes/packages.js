@@ -97,8 +97,10 @@ router.post('/', async (req, res) => {
 });
 
 
-router.post('/book', async (req, res) => { // Remove auth temporarily for testing
+router.post('/book', async (req, res) => {
   try {
+    console.log('Request body:', req.body);
+    
     const { packageId, userId, userName, userPhone, pickupAddress, seats = 1 } = req.body;
     
     // Check if package exists
@@ -118,17 +120,22 @@ router.post('/book', async (req, res) => { // Remove auth temporarily for testin
       });
     }
     
+    // Calculate total amount
+    const totalAmount = package.price * seats;
+    
     // Create booking
-    const booking = await PackageBooking.create({
+    const booking = new PackageBooking({
       packageId,
       userId,
       userName,
       userPhone,
       pickupAddress,
       seats,
-      totalAmount: package.price * seats,
+      totalAmount,
       status: 'confirmed'
     });
+    
+    await booking.save();
     
     // Update available seats
     if (package.availableSeats != null) {
@@ -149,5 +156,4 @@ router.post('/book', async (req, res) => { // Remove auth temporarily for testin
     });
   }
 });
-
 module.exports = router;
