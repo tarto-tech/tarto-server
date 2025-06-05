@@ -3,6 +3,9 @@ const express = require('express');
 const router = express.Router();
 const Package = require('../models/package');
 const auth = require('../middleware/auth');
+// At the top of routes/packages.js
+const Booking = require('../models/booking');
+
 
 // Get all packages or filter by address
 router.get('/', async (req, res) => {
