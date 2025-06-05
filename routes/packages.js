@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
 });
 
 
-router.post('/book', async (req, res) => {
+router.post('/book',auth, async (req, res) => {
   try {
     console.log('Request body:', req.body);
     
@@ -147,7 +147,8 @@ router.post('/book', async (req, res) => {
       success: true,
       data: booking
     });
-  } catch (error) {
+  }
+   catch (error) {
     console.error('Error booking package:', error);
     res.status(500).json({
       success: false,
