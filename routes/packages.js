@@ -123,4 +123,57 @@ router.post('/book', async (req, res) => {
   }
 });
 
+// In your server's routes file
+router.post('/packages/book', auth, async (req, res) => {
+  try {
+    const { packageId, userId, userName, userPhone, pickupAddress, seats = 1 } = req.body;
+    
+    // Check if package exists
+    const package = await Package.findById(packageId);
+    if (!package) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
+      });
+    }
+    
+    // Check if enough seats are available
+    if (package.availableSeats != null && package.availableSeats < seats) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${package.availableSeats} seats available`
+      });
+    }
+    
+    // Create booking
+    const booking = await Booking.create({
+      package: packageId,
+      user: userId,
+      userName,
+      userPhone,
+      pickupAddress,
+      seats,
+      totalAmount: package.price * seats,
+      status: 'confirmed'
+    });
+    
+    // Update available seats
+    if (package.availableSeats != null) {
+      package.availableSeats -= seats;
+      await package.save();
+    }
+    
+    res.status(201).json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error booking package:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to book package'
+    });
+  }
+});
+
 module.exports = router;
