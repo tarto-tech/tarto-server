@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
 
 
 // In your server's routes file
-router.post('/book', auth, async (req, res) => {
+router.post('/book', async (req, res) => {
   try {
     const { packageId, userId, userName, userPhone, pickupAddress, seats = 1 } = req.body;
     
