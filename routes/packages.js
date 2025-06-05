@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const Package = require('../models/package');
+const auth = require('../middleware/auth');
 
 // Get all packages or filter by address
 router.get('/', async (req, res) => {
@@ -92,39 +93,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Book a package
-router.post('/book', async (req, res) => {
-  try {
-    const { packageId, userId, pickupAddress, pickupDate, numberOfPeople } = req.body;
-    
-    // Create a booking record
-    const booking = new Booking({
-      packageId,
-      userId,
-      pickupAddress,
-      pickupDate: pickupDate || new Date(),
-      numberOfPeople: numberOfPeople || 1,
-      status: 'confirmed'
-    });
-    
-    await booking.save();
-    
-    res.status(201).json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error booking package:', error);
-    res.status(400).json({
-      success: false,
-      message: 'Failed to book package',
-      error: error.message
-    });
-  }
-});
 
 // In your server's routes file
-router.post('/packages/book', auth, async (req, res) => {
+router.post('/book', auth, async (req, res) => {
   try {
     const { packageId, userId, userName, userPhone, pickupAddress, seats = 1 } = req.body;
     
