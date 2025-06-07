@@ -116,7 +116,7 @@ router.get('/user/:userId', async (req, res) => {
       error: error.message
     });
   }
-}); 
+});
 
 
 router.post('/book', async (req, res) => {
