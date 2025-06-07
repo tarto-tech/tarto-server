@@ -95,6 +95,28 @@ router.post('/', async (req, res) => {
     });
   }
 });
+// In routes/packages.js
+// Get package bookings by user ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const bookings = await PackageBooking.find({ userId })
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Error fetching user package bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch package bookings',
+      error: error.message
+    });
+  }
+});
 
 
 router.post('/book', async (req, res) => {
