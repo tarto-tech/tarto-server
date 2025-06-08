@@ -49,7 +49,10 @@ router.post('/', async (req, res) => {
       totalPrice,
       type,
       payment,
-      additionalCharges
+      additionalCharges,
+      pickupDate,
+      pickupTime,
+      returnDate
     } = req.body;
 
     // Validate required fields
@@ -77,6 +80,9 @@ router.post('/', async (req, res) => {
       },
       totalPrice,
       type,
+      pickupDate,
+      pickupTime,
+      returnDate,
       payment: payment || {
         method: 'cash',
         status: 'pending',
@@ -94,7 +100,8 @@ router.post('/', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      data: savedBooking
+      data: savedBooking,
+       bookingId: savedBooking._id 
     });
   } catch (error) {
     console.error('Error creating booking:', error);

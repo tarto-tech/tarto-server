@@ -34,8 +34,6 @@ const paymentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const bookingSchema = new mongoose.Schema({
-
-  
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -75,6 +73,17 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['city', 'outstation'],
     required: true
+  },
+   pickupDate: {
+    type: Date,
+    required: true
+  },
+  pickupTime: {
+    type: String,
+    required: true
+  },
+  returnDate: {
+    type: Date,
   },
   cancellationReason: String,
   cancelledAt: Date,
