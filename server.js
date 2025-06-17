@@ -27,6 +27,7 @@ const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const packageRoutes = require('./routes/packages'); 
 const resortRoutes = require('./routes/resortRoutes');
+const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 
 
@@ -42,6 +43,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
+app.use('/api/resorts', resortBookingRoutes);
 
 
 // Health check endpoint

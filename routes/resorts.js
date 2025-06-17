@@ -1,28 +1,55 @@
-// routes/resorts.js
+// routes/resortBookingRoutes.js
 const express = require('express');
 const router = express.Router();
-const Resort = require('../models/resort');
-const ResortBooking = require('../models/resortBooking');
-const auth = require('../middleware/auth');
+const mongoose = require('mongoose');
+
+// Create resort booking schema
+const resortBookingSchema = new mongoose.Schema({
+  resortId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
+  userId: {
+    type: String,
+    required: true
+  },
+  checkInDate: {
+    type: Date,
+    required: true
+  },
+  checkOutDate: {
+    type: Date,
+    required: true
+  },
+  guests: {
+    type: Number,
+    required: true
+  },
+  totalPrice: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['confirmed', 'pending', 'cancelled'],
+    default: 'confirmed'
+  }
+}, { timestamps: true });
+
+// Create model
+const ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
 
 // Book a resort
 router.post('/book', async (req, res) => {
   try {
-    const { resortId, userId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
+    console.log('Booking request received:', req.body);
     
-    // Check if resort exists
-    const resort = await Resort.findById(resortId);
-    if (!resort) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort not found'
-      });
-    }
+    const { resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
     
     // Create booking
     const booking = new ResortBooking({
       resortId,
-      userId,
+      userId: req.body.userId || 'guest',
       checkInDate,
       checkOutDate,
       guests,
