@@ -30,6 +30,8 @@ const resortRoutes = require('./routes/resortRoutes');
 
 
 
+
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
