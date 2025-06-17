@@ -3,47 +3,48 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Create resort booking schema
-const resortBookingSchema = new mongoose.Schema({
-  resortId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
-  },
-  userId: {
-    type: String,
-    required: true
-  },
-  checkInDate: {
-    type: Date,
-    required: true
-  },
-  checkOutDate: {
-    type: Date,
-    required: true
-  },
-  guests: {
-    type: Number,
-    required: true
-  },
-  totalPrice: {
-    type: Number,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['confirmed', 'pending', 'cancelled'],
-    default: 'confirmed'
-  }
-}, { timestamps: true });
+// Define the schema only if it doesn't exist
+let ResortBooking;
+try {
+  ResortBooking = mongoose.model('ResortBooking');
+} catch (e) {
+  const resortBookingSchema = new mongoose.Schema({
+    resortId: {
+      type: String,
+      required: true
+    },
+    userId: {
+      type: String,
+      required: true
+    },
+    checkInDate: {
+      type: Date,
+      required: true
+    },
+    checkOutDate: {
+      type: Date,
+      required: true
+    },
+    guests: {
+      type: Number,
+      required: true
+    },
+    totalPrice: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      default: 'confirmed'
+    }
+  }, { timestamps: true });
+  
+  ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
+}
 
-// Create model
-const ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
-
-// Book a resort
+// Book a resort endpoint
 router.post('/book', async (req, res) => {
   try {
-    console.log('Booking request received:', req.body);
-    
     const { resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
     
     // Create booking
@@ -53,8 +54,7 @@ router.post('/book', async (req, res) => {
       checkInDate,
       checkOutDate,
       guests,
-      totalPrice,
-      status: 'confirmed'
+      totalPrice
     });
     
     await booking.save();
