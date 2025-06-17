@@ -3,65 +3,42 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Define the schema only if it doesn't exist
-let ResortBooking;
-try {
-  ResortBooking = mongoose.model('ResortBooking');
-} catch (e) {
-  const resortBookingSchema = new mongoose.Schema({
-    resortId: {
-      type: String,
-      required: true
-    },
-    userId: {
-      type: String,
-      required: true
-    },
-    checkInDate: {
-      type: Date,
-      required: true
-    },
-    checkOutDate: {
-      type: Date,
-      required: true
-    },
-    guests: {
-      type: Number,
-      required: true
-    },
-    totalPrice: {
-      type: Number,
-      required: true
-    },
-    status: {
-      type: String,
-      default: 'confirmed'
-    }
-  }, { timestamps: true });
-  
-  ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
-}
-
 // Book a resort endpoint
 router.post('/book', async (req, res) => {
   try {
+    console.log('Booking request received:', req.body);
+    
+    // Get data from request
     const { resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
     
-    // Create booking
-    const booking = new ResortBooking({
+    // Create a direct document in the resortbookings collection
+    const result = await mongoose.connection.collection('resortbookings').insertOne({
       resortId,
       userId: req.body.userId || 'guest',
-      checkInDate,
-      checkOutDate,
+      checkInDate: new Date(checkInDate),
+      checkOutDate: new Date(checkOutDate),
       guests,
-      totalPrice
+      totalPrice,
+      status: 'confirmed',
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     
-    await booking.save();
+    console.log('Booking created with ID:', result.insertedId);
     
+    // Return success response
     res.status(201).json({
       success: true,
-      data: booking
+      data: {
+        _id: result.insertedId,
+        resortId,
+        checkInDate,
+        checkOutDate,
+        guests,
+        totalPrice,
+        status: 'confirmed',
+        createdAt: new Date()
+      }
     });
   } catch (error) {
     console.error('Error booking resort:', error);
