@@ -29,6 +29,7 @@ const packageRoutes = require('./routes/packages');
 const resortRoutes = require('./routes/resortRoutes');
 
 
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
@@ -39,6 +40,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
