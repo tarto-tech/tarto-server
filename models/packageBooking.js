@@ -36,7 +36,7 @@ const packageBookingSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-    default: 'confirmed'
+    default: 'pending'
   }
 }, {
   timestamps: true

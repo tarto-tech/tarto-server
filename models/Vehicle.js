@@ -55,9 +55,9 @@ const vehicleSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  driverId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Driver'
+  driverBata: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

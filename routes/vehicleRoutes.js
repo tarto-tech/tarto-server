@@ -53,7 +53,8 @@ router.post('/', [
   check('location.type').equals('Point'),
   check('location.coordinates').isArray().withMessage('Coordinates must be an array'),
   check('location.coordinates.*').isFloat().withMessage('Each coordinate must be a number'),
-  check('imageUrl').isURL().withMessage('Invalid image URL')
+  check('imageUrl').isURL().withMessage('Invalid image URL'),
+  check('driverBata').optional().isNumeric().withMessage('Driver bata must be numeric')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -175,7 +176,8 @@ router.put('/:id', [
   check('location.coordinates').optional().isArray(),
   check('location.coordinates.*').optional().isFloat(),
   check('imageUrl').optional().isURL().withMessage('Invalid image URL'),
-  check('isAvailable').optional().isBoolean().withMessage('Availability must be boolean')
+  check('isAvailable').optional().isBoolean().withMessage('Availability must be boolean'),
+  check('driverBata').optional().isNumeric().withMessage('Driver bata must be numeric')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
