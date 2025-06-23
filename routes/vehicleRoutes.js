@@ -74,6 +74,12 @@ router.post('/', [
       hasAC: req.body.hasAC !== undefined ? req.body.hasAC : true
     };
     
+    // Handle legacy driverId field
+    if (req.body.driverId !== undefined) {
+      vehicleData.driverBata = req.body.driverId || 0;
+      delete vehicleData.driverId;
+    }
+    
     console.log('Creating vehicle with data:', vehicleData);
     
     const newVehicle = new Vehicle(vehicleData);
@@ -197,7 +203,14 @@ router.put('/:id', [
   }
 
   try {
-    const updateData = req.body;
+    const updateData = { ...req.body };
+    
+    // Handle legacy driverId field
+    if (updateData.driverId !== undefined) {
+      updateData.driverBata = updateData.driverId || 0;
+      delete updateData.driverId;
+    }
+    
     const vehicle = await Vehicle.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true
