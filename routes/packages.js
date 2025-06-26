@@ -182,8 +182,14 @@ router.post('/book', async (req, res) => {
 // Add these routes to your existing routes/packages.js file
 
 // Update package
+// Add this route to routes/packages.js before module.exports = router;
+
+// Update package
 router.put('/:id', async (req, res) => {
   try {
+    console.log('Updating package ID:', req.params.id);
+    console.log('Update data:', req.body);
+    
     const updatedPackage = await Package.findByIdAndUpdate(
       req.params.id,
       req.body,
