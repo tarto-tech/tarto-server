@@ -12,8 +12,7 @@ const resortSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   imageUrl: {
     type: String,
@@ -24,17 +23,12 @@ const resortSchema = new mongoose.Schema({
   }],
   maxGuests: {
     type: Number,
-    default: 2,
-    min: 1
+    default: 2
   },
   location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      required: true
-    },
+    address: String,
     coordinates: {
-      type: [Number],
+      type: [Number], // [longitude, latitude]
       required: true
     }
   },
@@ -42,22 +36,12 @@ const resortSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  rating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
-  },
-  category: {
-    type: String,
-    enum: ['luxury', 'budget', 'mid-range', 'boutique'],
-    default: 'mid-range'
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-// Create geospatial index
-resortSchema.index({ location: '2dsphere' });
+resortSchema.index({ 'location.coordinates': '2dsphere' });
 
 module.exports = mongoose.model('Resort', resortSchema);

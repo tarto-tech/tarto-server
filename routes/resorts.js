@@ -36,89 +36,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PUT update resort booking
-router.put('/bookings/:id', async (req, res) => {
-  try {
-    const booking = await ResortBooking.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort booking not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Resort booking updated successfully',
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error updating resort booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update resort booking'
-    });
-  }
-});
-
-// DELETE resort booking
-router.delete('/bookings/:id', async (req, res) => {
-  try {
-    const booking = await ResortBooking.findByIdAndDelete(req.params.id);
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort booking not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Resort booking deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting resort booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete resort booking'
-    });
-  }
-});
-
-// GET single resort booking
-router.get('/bookings/:id', async (req, res) => {
-  try {
-    const booking = await ResortBooking.findById(req.params.id)
-      .populate('userId', 'name phone email')
-      .populate('resortId', 'name price imageUrl');
-    
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort booking not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error fetching resort booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resort booking'
-    });
-  }
-});
-
-
 // GET single resort
 router.get('/:id', async (req, res) => {
   try {
@@ -297,8 +214,14 @@ router.post('/bookings', async (req, res) => {
 router.get('/bookings/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    const { status } = req.query;
     
-    const bookings = await ResortBooking.find({ userId })
+    const query = { userId };
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    
+    const bookings = await ResortBooking.find(query)
       .sort({ createdAt: -1 })
       .populate('resortId', 'name price imageUrl');
     
@@ -318,7 +241,14 @@ router.get('/bookings/user/:userId', async (req, res) => {
 // GET all resort bookings (admin)
 router.get('/bookings', async (req, res) => {
   try {
-    const bookings = await ResortBooking.find()
+    const { status } = req.query;
+    
+    const query = {};
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    
+    const bookings = await ResortBooking.find(query)
       .sort({ createdAt: -1 })
       .populate('userId', 'name phone email')
       .populate('resortId', 'name price imageUrl');
@@ -332,6 +262,33 @@ router.get('/bookings', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch resort bookings'
+    });
+  }
+});
+
+// GET single resort booking
+router.get('/bookings/:id', async (req, res) => {
+  try {
+    const booking = await ResortBooking.findById(req.params.id)
+      .populate('userId', 'name phone email')
+      .populate('resortId', 'name price imageUrl');
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort booking not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error fetching resort booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resort booking'
     });
   }
 });
@@ -372,6 +329,61 @@ router.patch('/bookings/:id/status', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update resort booking status'
+    });
+  }
+});
+
+// PUT update resort booking
+router.put('/bookings/:id', async (req, res) => {
+  try {
+    const booking = await ResortBooking.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Resort booking updated successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error updating resort booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update resort booking'
+    });
+  }
+});
+
+// DELETE resort booking
+router.delete('/bookings/:id', async (req, res) => {
+  try {
+    const booking = await ResortBooking.findByIdAndDelete(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Resort booking deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting resort booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete resort booking'
     });
   }
 });
