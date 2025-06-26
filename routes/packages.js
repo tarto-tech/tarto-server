@@ -72,21 +72,31 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Test route
+router.get('/test', (req, res) => {
+  res.json({ message: 'Package routes are working!' });
+});
+
 // Update package
 router.put('/:id', async (req, res) => {
   try {
-    console.log('Updating package ID:', req.params.id);
-    console.log('Update data:', req.body);
+    console.log('=== PACKAGE UPDATE START ===');
+    console.log('Package ID:', req.params.id);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log('Invalid ObjectId format');
       return res.status(400).json({
         success: false,
-        message: 'Invalid package ID'
+        message: 'Invalid package ID format'
       });
     }
 
     // Check if package exists first
+    console.log('Checking if package exists...');
     const existingPackage = await Package.findById(req.params.id);
+    console.log('Existing package:', existingPackage ? 'Found' : 'Not found');
+    
     if (!existingPackage) {
       return res.status(404).json({
         success: false,
@@ -94,25 +104,32 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    console.log('Attempting to update package...');
     const updatedPackage = await Package.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
 
-    console.log('Package updated successfully:', updatedPackage);
+    console.log('Package updated successfully');
+    console.log('=== PACKAGE UPDATE END ===');
 
     res.json({
       success: true,
       data: updatedPackage
     });
   } catch (error) {
-    console.error('Error updating package:', error);
-    console.error('Error details:', error.message);
+    console.error('=== PACKAGE UPDATE ERROR ===');
+    console.error('Error type:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Full error:', error);
+    console.error('=== ERROR END ===');
+    
     res.status(500).json({
       success: false,
       message: 'Failed to update package',
-      error: error.message
+      error: error.message,
+      errorType: error.name
     });
   }
 });
