@@ -54,6 +54,7 @@ router.get('/:id', async (req, res) => {
 // Create new package
 router.post('/', async (req, res) => {
   try {
+    console.log('Creating package with data:', req.body);
     const newPackage = new Package(req.body);
     const savedPackage = await newPackage.save();
 
@@ -74,10 +75,22 @@ router.post('/', async (req, res) => {
 // Update package
 router.put('/:id', async (req, res) => {
   try {
+    console.log('Updating package ID:', req.params.id);
+    console.log('Update data:', req.body);
+
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid package ID'
+      });
+    }
+
+    // Check if package exists first
+    const existingPackage = await Package.findById(req.params.id);
+    if (!existingPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
       });
     }
 
@@ -87,12 +100,7 @@ router.put('/:id', async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!updatedPackage) {
-      return res.status(404).json({
-        success: false,
-        message: 'Package not found'
-      });
-    }
+    console.log('Package updated successfully:', updatedPackage);
 
     res.json({
       success: true,
@@ -100,6 +108,7 @@ router.put('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating package:', error);
+    console.error('Error details:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to update package',
