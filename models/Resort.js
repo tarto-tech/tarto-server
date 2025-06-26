@@ -26,7 +26,11 @@ const resortSchema = new mongoose.Schema({
     default: 2
   },
   location: {
-    address: String,
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
     coordinates: {
       type: [Number], // [longitude, latitude]
       required: true
@@ -39,9 +43,13 @@ const resortSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-});
+}, { timestamps: true });
 
-resortSchema.index({ 'location.coordinates': '2dsphere' });
+resortSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Resort', resortSchema);

@@ -26,7 +26,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const packageRoutes = require('./routes/packages'); 
-const resortRoutes = require('./routes/resorts');
+const resortRoutes = require('./routes/resortRoutes');
 
 // Routes
 app.use('/api/users', userRoutes);
