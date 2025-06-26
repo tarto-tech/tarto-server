@@ -24,15 +24,9 @@ const vehicleRoutes = require('./routes/vehicleRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
-// In server.js, add this line with the other routes
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const packageRoutes = require('./routes/packages'); 
-const resortRoutes = require('./routes/resortRoutes');
-const resortBookingRoutes = require('./routes/resorts');
-
-
-
-
+const resortRoutes = require('./routes/resorts');
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -44,8 +38,6 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
-app.use('/api/resorts', resortBookingRoutes);
-
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -1,15 +1,14 @@
-// models/resortBooking.js
 const mongoose = require('mongoose');
 
 const resortBookingSchema = new mongoose.Schema({
-  resortId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Resort',
-    required: true
-  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: true
+  },
+  resortId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resort',
     required: true
   },
   checkInDate: {
@@ -23,7 +22,7 @@ const resortBookingSchema = new mongoose.Schema({
   guests: {
     type: Number,
     required: true,
-    min: 1
+    default: 1
   },
   totalPrice: {
     type: Number,
@@ -31,11 +30,23 @@ const resortBookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-    default: 'confirmed'
+    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+    default: 'pending'
+  },
+  payment: {
+    method: {
+      type: String,
+      default: 'cash'
+    },
+    status: {
+      type: String,
+      default: 'pending'
+    }
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
 module.exports = mongoose.model('ResortBooking', resortBookingSchema);
