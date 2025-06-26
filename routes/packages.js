@@ -1,7 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const Package = require('../models/Package');
 const mongoose = require('mongoose');
+
+// Define Package model inline if it doesn't exist
+let Package;
+try {
+  Package = mongoose.model('Package');
+} catch (error) {
+  // Create the model if it doesn't exist
+  const packageSchema = new mongoose.Schema({
+    title: String,
+    description: String,
+    price: Number,
+    imageUrl: String,
+    isActive: { type: Boolean, default: true }
+  }, { timestamps: true });
+  
+  Package = mongoose.model('Package', packageSchema);
+}
+
+// Test route
+router.get('/test', (req, res) => {
+  res.json({ message: 'Package routes are working!' });
+});
 
 // Get all packages
 router.get('/', async (req, res) => {
@@ -72,64 +93,39 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Test route
-router.get('/test', (req, res) => {
-  res.json({ message: 'Package routes are working!' });
-});
-
 // Update package
 router.put('/:id', async (req, res) => {
   try {
-    console.log('=== PACKAGE UPDATE START ===');
-    console.log('Package ID:', req.params.id);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      console.log('Invalid ObjectId format');
       return res.status(400).json({
         success: false,
         message: 'Invalid package ID format'
       });
     }
 
-    // Check if package exists first
-    console.log('Checking if package exists...');
-    const existingPackage = await Package.findById(req.params.id);
-    console.log('Existing package:', existingPackage ? 'Found' : 'Not found');
-    
-    if (!existingPackage) {
-      return res.status(404).json({
-        success: false,
-        message: 'Package not found'
-      });
-    }
-
-    console.log('Attempting to update package...');
     const updatedPackage = await Package.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
 
-    console.log('Package updated successfully');
-    console.log('=== PACKAGE UPDATE END ===');
+    if (!updatedPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
+      });
+    }
 
     res.json({
       success: true,
       data: updatedPackage
     });
   } catch (error) {
-    console.error('=== PACKAGE UPDATE ERROR ===');
-    console.error('Error type:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
-    console.error('=== ERROR END ===');
-    
+    console.error('Error updating package:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update package',
-      error: error.message,
-      errorType: error.name
+      error: error.message
     });
   }
 });
