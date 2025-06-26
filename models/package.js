@@ -1,66 +1,62 @@
-// models/packageModel.js
 const mongoose = require('mongoose');
 
 const packageSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Package title is required'],
+    required: true,
     trim: true
   },
   description: {
     type: String,
-    required: [true, 'Package description is required']
+    required: true
   },
   price: {
     type: Number,
-    required: [true, 'Package price is required']
-  },
-  imageUrl: {
-    type: String,
-    required: [true, 'Package image URL is required']
-  },
-  places: {
-    type: [String],
-    default: []
-  },
-  amenities: {
-    type: Map,
-    of: String,
-    default: {}
+    required: true,
+    min: 0
   },
   duration: {
     type: Number,
-    required: [true, 'Package duration is required']
+    required: true,
+    min: 1
   },
-  availableLocations: {
-    type: [String],
-    default: []
-  },
-  location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number],
-      required: true
-    }
-  },
-  // Add these new fields
-  totalSeats: {
-    type: Number,
-    default: 30
+  imageUrl: {
+    type: String,
+    required: true
   },
   availableSeats: {
     type: Number,
-    default: 30
+    default: null // null means unlimited
+  },
+  destinations: [{
+    name: String,
+    description: String
+  }],
+  inclusions: [String],
+  exclusions: [String],
+  itinerary: [{
+    day: Number,
+    title: String,
+    description: String,
+    activities: [String]
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  category: {
+    type: String,
+    enum: ['adventure', 'family', 'romantic', 'religious', 'beach', 'mountain', 'cultural'],
+    default: 'family'
+  },
+  difficulty: {
+    type: String,
+    enum: ['easy', 'moderate', 'difficult'],
+    default: 'easy'
   }
 }, {
   timestamps: true
 });
 
-// Add geospatial index for location-based queries
-packageSchema.index({ location: '2dsphere' });
-
-module.exports = mongoose.model('Package', packageSchema);
+const Package = mongoose.model('Package', packageSchema);
+module.exports = Package;
