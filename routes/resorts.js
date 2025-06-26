@@ -36,8 +36,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Add these routes to your existing resorts.js file
-
 // PUT update resort booking
 router.put('/bookings/:id', async (req, res) => {
   try {
