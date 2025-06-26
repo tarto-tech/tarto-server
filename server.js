@@ -25,7 +25,8 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
-const packageRoutes = require('./routes/packages'); 
+// Temporarily commented out until Package model is deployed
+// const packageRoutes = require('./routes/packages'); 
 const resortRoutes = require('./routes/resortRoutes');
 
 // Routes
@@ -36,7 +37,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes); 
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/packages', packageRoutes);
+// Temporarily commented out until Package model is deployed
+// app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
 
 // Health check endpoint
