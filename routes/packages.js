@@ -179,4 +179,63 @@ router.post('/book', async (req, res) => {
     });
   }
 });
+// Add these routes to your existing routes/packages.js file
+
+// Update package
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedPackage = await Package.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: updatedPackage
+    });
+  } catch (error) {
+    console.error('Error updating package:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update package',
+      error: error.message
+    });
+  }
+});
+
+// Delete package
+router.delete('/:id', async (req, res) => {
+  try {
+    const deletedPackage = await Package.findByIdAndDelete(req.params.id);
+    
+    if (!deletedPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Package deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting package:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete package',
+      error: error.message
+    });
+  }
+});
+
+
 module.exports = router;
