@@ -1,55 +1,54 @@
-// models/Resort.js
 const mongoose = require('mongoose');
 
-const resortSchema = new mongoose.Schema({
-  name: {
-    type: String,
+const resortBookingSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  resortId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resort',
+    required: true
+  },
+  checkInDate: {
+    type: Date,
+    required: true
+  },
+  checkOutDate: {
+    type: Date,
+    required: true
+  },
+  guests: {
+    type: Number,
     required: true,
-    trim: true
+    default: 1
   },
-  description: {
-    type: String,
-    required: true
-  },
-  price: {
+  totalPrice: {
     type: Number,
     required: true
   },
-  imageUrl: {
+  status: {
     type: String,
-    required: true
+    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+    default: 'pending'
   },
-  amenities: [{
-    type: String
-  }],
-  maxGuests: {
-    type: Number,
-    default: 2
-  },
-  location: {
-    type: {
+  payment: {
+    method: {
       type: String,
-      enum: ['Point'],
-      default: 'Point'
+      default: 'cash'
     },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      required: true
-    }
+    status: {
+      type: String,
+      default: 'pending'
+    },
+    amount: Number
   },
   createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Create a geospatial index on the location field
-resortSchema.index({ location: '2dsphere' });
-
-const Resort = mongoose.model('Resort', resortSchema);
-
-module.exports = Resort;
+const ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
+module.exports = ResortBooking;
