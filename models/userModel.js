@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    unique: true,
+    unique: true, // ✅ Creates an index automatically
     trim: true,
     match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
   },
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
     minlength: [2, 'Name must be at least 2 characters long'],
     maxlength: [50, 'Name cannot be more than 50 characters']
   },
-   addresses: [{
+  addresses: [{
     id: String,
     name: String,
     address: String,
@@ -52,10 +52,10 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true // Adds createdAt and updatedAt fields automatically
+  timestamps: true
 });
 
-// Add index for better query performance
-userSchema.index({ phone: 1 });
+// ❌ REMOVE this line to prevent duplicate index warning
+// userSchema.index({ phone: 1 });
 
 module.exports = mongoose.model('User', userSchema);
