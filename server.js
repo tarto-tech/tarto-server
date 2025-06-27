@@ -24,12 +24,8 @@ const vehicleRoutes = require('./routes/vehicleRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
-// In server.js, add this line with the other routes
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
-const packageRoutes = require('./routes/packages');
 const resortRoutes = require('./routes/resortRoutes');
-// This line is duplicating resortRoutes with a different name
-// const resortBookingRoutes = require('./routes/resorts');
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -39,10 +35,16 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
-// Removing duplicate route
-// app.use('/api/resorts', resortBookingRoutes);
+
+// Try to load packages route if it exists
+try {
+  const packageRoutes = require('./routes/packages');
+  app.use('/api/packages', packageRoutes);
+  console.log('Package routes loaded successfully');
+} catch (error) {
+  console.warn('Package routes not loaded:', error.message);
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -73,7 +75,7 @@ const server = app.listen(PORT, HOST, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error(`Unhandled Rejection: ${err.message}`);
-server.close(() => process.exit(1));
+  server.close(() => process.exit(1));
 });
 
 // Handle SIGTERM for graceful shutdown
