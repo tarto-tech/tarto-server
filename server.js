@@ -35,7 +35,7 @@ app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 
-// Try to load resort routes if they exist
+// Load resort routes with error handling
 try {
   const resortRoutes = require('./routes/resortRoutes');
   app.use('/api/resorts', resortRoutes);
