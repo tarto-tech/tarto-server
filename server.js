@@ -25,7 +25,6 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
-const resortRoutes = require('./routes/resortRoutes');
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -35,7 +34,15 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/resorts', resortRoutes);
+
+// Try to load resort routes if they exist
+try {
+  const resortRoutes = require('./routes/resortRoutes');
+  app.use('/api/resorts', resortRoutes);
+  console.log('Resort routes loaded successfully');
+} catch (error) {
+  console.warn('Resort routes not loaded:', error.message);
+}
 
 // Try to load packages route if it exists
 try {
@@ -76,6 +83,7 @@ const server = app.listen(PORT, HOST, () => {
 process.on('unhandledRejection', (err) => {
   console.error(`Unhandled Rejection: ${err.message}`);
   server.close(() => process.exit(1));
+
 });
 
 // Handle SIGTERM for graceful shutdown
