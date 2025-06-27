@@ -37,11 +37,46 @@ app.use('/api/Homevehicles', homeVehicleRoutes);
 
 // Load resort routes with error handling
 try {
+  // First check if ResortBooking model exists
+  require('./models/ResortBooking');
   const resortRoutes = require('./routes/resortRoutes');
   app.use('/api/resorts', resortRoutes);
   console.log('Resort routes loaded successfully');
 } catch (error) {
   console.warn('Resort routes not loaded:', error.message);
+  
+  // Try to load just the basic resort routes without booking functionality
+  try {
+    const Resort = require('./models/Resort');
+    const express = require('express');
+    const basicResortRouter = express.Router();
+    
+    // Basic GET all resorts route
+    basicResortRouter.get('/', async (req, res) => {
+      try {
+        const resorts = await Resort.find();
+        res.json({ success: true, data: resorts });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    });
+    
+    // Basic GET single resort route
+    basicResortRouter.get('/:id', async (req, res) => {
+      try {
+        const resort = await Resort.findById(req.params.id);
+        if (!resort) return res.status(404).json({ success: false, message: 'Resort not found' });
+        res.json({ success: true, data: resort });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    });
+    
+    app.use('/api/resorts', basicResortRouter);
+    console.log('Basic resort routes loaded successfully');
+  } catch (innerError) {
+    console.warn('Could not load basic resort routes:', innerError.message);
+  }
 }
 
 // Try to load packages route if it exists
