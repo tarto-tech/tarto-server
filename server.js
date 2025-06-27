@@ -37,8 +37,68 @@ app.use('/api/Homevehicles', homeVehicleRoutes);
 
 // Load resort routes with error handling
 try {
-  // First check if ResortBooking model exists
-  require('./models/ResortBooking');
+  // Try to load ResortBooking model or create it if it doesn't exist
+  try {
+    require('./models/ResortBooking');
+  } catch (modelError) {
+    // Create ResortBooking model on the fly if it doesn't exist
+    console.log('Creating ResortBooking model on the fly');
+    const mongoose = require('mongoose');
+    
+    const resortBookingSchema = new mongoose.Schema({
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      resortId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Resort',
+        required: true
+      },
+      checkInDate: {
+        type: Date,
+        required: true
+      },
+      checkOutDate: {
+        type: Date,
+        required: true
+      },
+      guests: {
+        type: Number,
+        required: true,
+        default: 1
+      },
+      totalPrice: {
+        type: Number,
+        required: true
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+        default: 'pending'
+      },
+      payment: {
+        method: {
+          type: String,
+          default: 'cash'
+        },
+        status: {
+          type: String,
+          default: 'pending'
+        }
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }, { timestamps: true });
+    
+    // Register the model
+    mongoose.model('ResortBooking', resortBookingSchema);
+  }
+  
+  // Now load the resort routes
   const resortRoutes = require('./routes/resortRoutes');
   app.use('/api/resorts', resortRoutes);
   console.log('Resort routes loaded successfully');
