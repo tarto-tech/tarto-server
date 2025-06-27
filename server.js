@@ -44,7 +44,6 @@ try {
   
   // Create ResortBooking model on the fly
   console.log('Creating ResortBooking model on the fly');
-  const mongoose = require('mongoose');
   
   // Define the schema
   const resortBookingSchema = new mongoose.Schema({
