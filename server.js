@@ -24,57 +24,60 @@ const vehicleRoutes = require('./routes/vehicleRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
+// In server.js, add this line with the other routes
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
-const packageRoutes = require('./routes/packages'); 
+const packageRoutes = require('./routes/packages');
 const resortRoutes = require('./routes/resortRoutes');
+const resortBookingRoutes = require('./routes/resorts');
 
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/users', addressRoutes); 
+app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/packages', packageRoutes);
 app.use('/api/resorts', resortRoutes);
+app.use('/api/resorts', resortBookingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is healthy',
-    timestamp: new Date()
-  });
+res.status(200).json({
+success: true,
+message: 'Server is healthy',
+timestamp: new Date()
+});
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+console.error(err.stack);
+res.status(500).json({
+success: false,
+message: 'Internal Server Error',
+error: process.env.NODE_ENV === 'development' ? err.message : undefined
+});
 });
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV || 'production'} mode on http://${HOST}:${PORT}`);
+console.log(🚀 Server running in ${process.env.NODE_ENV || 'production'} mode on http://${HOST}:${PORT});
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error(`Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
+console.error(Unhandled Rejection: ${err.message});
+server.close(() => process.exit(1));
 });
 
 // Handle SIGTERM for graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
-  });
+console.log('SIGTERM received. Shutting down gracefully');
+server.close(() => {
+console.log('Process terminated');
+});
 });
