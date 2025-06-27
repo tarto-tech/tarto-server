@@ -1,7 +1,7 @@
-/ routes/packages.js
+// routes/packages.js
 const express = require('express');
 const router = express.Router();
-const Package = require('../models/package');
+const Package = require('../models/packageModel');
 const auth = require('../middleware/auth');
 // At the top of routes/packages.js
 const PackageBooking = require('../models/packageBooking');
