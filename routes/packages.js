@@ -243,4 +243,165 @@ error: error.message
 }
 });
 
+
+
+
+
+// Add these routes to your server code (routes/admin.js)
+
+// Get all package bookings for admin
+router.get('/packages/bookings', async (req, res) => {
+  try {
+    const bookings = await PackageBooking.find()
+      .sort({ createdAt: -1 })
+      .populate('packageId', 'title price imageUrl')
+      .populate('userId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Error fetching package bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch package bookings',
+      error: error.message
+    });
+  }
+});
+
+// Get all resort bookings for admin
+router.get('/resorts/bookings', async (req, res) => {
+  try {
+    const bookings = await ResortBooking.find()
+      .sort({ createdAt: -1 })
+      .populate('resortId', 'name price imageUrl')
+      .populate('userId', 'name phone email');
+
+    res.status(200).json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Error fetching resort bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resort bookings',
+      error: error.message
+    });
+  }
+});
+
+// Update package booking status
+router.patch('/packages/bookings/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    const booking = await PackageBooking.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Package booking status updated to ${status}`,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error updating package booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update package booking status',
+      error: error.message
+    });
+  }
+});
+// Add this to your server routes (routes/admin.js)
+
+// Get all package bookings for admin
+router.get('/packages/bookings', async (req, res) => {
+  try {
+    console.log('Admin requesting package bookings');
+    
+    // Find all package bookings
+    const bookings = await PackageBooking.find()
+      .sort({ createdAt: -1 })
+      .populate('packageId', 'title price imageUrl');
+    
+    console.log(`Found ${bookings.length} package bookings`);
+    
+    res.status(200).json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Error fetching package bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch package bookings',
+      error: error.message
+    });
+  }
+});
+
+// Update package booking status
+router.patch('/packages/bookings/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    console.log(`Updating package booking ${id} status to ${status}`);
+
+    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    const booking = await PackageBooking.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package booking not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Package booking status updated to ${status}`,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error updating package booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update package booking status',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
