@@ -118,65 +118,65 @@ error: error.message
 }
 });
 
+
 router.post('/book', async (req, res) => {
 try {
-console.log('Request body:', req.body);
+  console.log('Request body:', req.body);
 
-const { packageId, userId, userName, userPhone, pickupAddress, seats = 1 } = req.body;
+  const { packageId, userId, userName, userPhone, pickupAddress, seats = 1, status = 'pending' } = req.body;
 
-// Check if package exists
-const package = await Package.findById(packageId);
-if (!package) {
-  return res.status(404).json({
-    success: false,
-    message: 'Package not found'
+  // Check if package exists
+  const package = await Package.findById(packageId);
+  if (!package) {
+    return res.status(404).json({
+      success: false,
+      message: 'Package not found'
+    });
+  }
+
+  // Check if enough seats are available
+  if (package.availableSeats != null && package.availableSeats < seats) {
+    return res.status(400).json({
+      success: false,
+      message: `Only ${package.availableSeats} seats available`
+    });
+  }
+
+  // Calculate total amount
+  const totalAmount = package.price * seats;
+
+  // Create booking
+  const booking = new PackageBooking({
+    packageId,
+    userId,
+    userName,
+    userPhone,
+    pickupAddress,
+    seats,
+    totalAmount,
+    status: status // Use the status from request or default to 'pending'
   });
-}
 
-// Check if enough seats are available
-if (package.availableSeats != null && package.availableSeats < seats) {
-  return res.status(400).json({
-    success: false,
-    message: `Only ${package.availableSeats} seats available`
+  await booking.save();
+
+  // Update available seats
+  if (package.availableSeats != null) {
+    package.availableSeats -= seats;
+    await package.save();
+  }
+
+  res.status(201).json({
+    success: true,
+    data: booking
   });
-}
-
-// Calculate total amount
-const totalAmount = package.price * seats;
-
-// Create booking
-const booking = new PackageBooking({
-  packageId,
-  userId,
-  userName,
-  userPhone,
-  pickupAddress,
-  seats,
-  totalAmount,
-  status: 'confirmed'
-});
-
-await booking.save();
-
-// Update available seats
-if (package.availableSeats != null) {
-  package.availableSeats -= seats;
-  await package.save();
-}
-
-res.status(201).json({
-  success: true,
-  data: booking
-});
-
 }
 catch (error) {
-console.error('Error booking package:', error);
-res.status(500).json({
-success: false,
-message: 'Failed to book package',
-error: error.message
-});
+  console.error('Error booking package:', error);
+  res.status(500).json({
+    success: false,
+    message: 'Failed to book package',
+    error: error.message
+  });
 }
 });
 // Add these routes to your existing routes/packages.js file

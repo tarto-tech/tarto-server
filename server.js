@@ -11,6 +11,41 @@ dotenv.config();
 // Connect to MongoDB
 connectDB();
 
+// Create a test resort if none exist
+async function createTestResort() {
+  try {
+    const Resort = require('./models/Resort');
+    const count = await Resort.countDocuments();
+    
+    if (count === 0) {
+      console.log('No resorts found, creating a test resort');
+      const testResort = new Resort({
+        name: 'Test Resort',
+        description: 'A beautiful resort for testing',
+        price: 5000,
+        imageUrl: 'https://example.com/image.jpg',
+        amenities: ['WiFi', 'Pool', 'Spa'],
+        maxGuests: 4,
+        location: {
+          type: 'Point',
+          coordinates: [77.5946, 12.9716]
+        }
+      });
+      
+      await testResort.save();
+      console.log('Test resort created successfully');
+    }
+  } catch (error) {
+    console.error('Error creating test resort:', error);
+  }
+}
+
+// Call the function after connection is established
+mongoose.connection.once('open', () => {
+  console.log('MongoDB connection established, checking for test data');
+  createTestResort();
+});
+
 const app = express();
 
 // Middleware
@@ -102,6 +137,16 @@ try {
   resortRouter.use((req, res, next) => {
     console.log(`Resort API: ${req.method} ${req.url}`);
     next();
+  });
+  
+  // Simple test route
+  resortRouter.get('/test', (req, res) => {
+    console.log('Resort test route accessed');
+    res.json({
+      success: true,
+      message: 'Resort router is working',
+      timestamp: new Date()
+    });
   });
   
   // GET all resorts
@@ -390,12 +435,97 @@ try {
   console.warn('Package routes not loaded:', error.message);
 }
 
+// Load simple resort routes that don't depend on models
+try {
+  const simpleResortRoutes = require('./routes/simpleResortRoutes');
+  app.use('/api/simple-resorts', simpleResortRoutes);
+  console.log('Simple resort routes loaded successfully');
+} catch (error) {
+  console.warn('Simple resort routes not loaded:', error.message);
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is healthy',
     timestamp: new Date()
+  });
+});
+
+// Hardcoded resort endpoints
+app.get('/api/hardcoded-resorts', (req, res) => {
+  console.log('Hardcoded resorts endpoint accessed');
+  res.status(200).json({
+    success: true,
+    data: [
+      {
+        _id: "6845ad46063e86f16e607009",
+        name: "Lakeside Villa",
+        description: "Luxurious villa with stunning lake views and private pool",
+        price: 12999,
+        imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+        maxGuests: 6
+      }
+    ]
+  });
+});
+
+// Test resort endpoint
+app.get('/api/resorts-test', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Resort test endpoint is working',
+    timestamp: new Date()
+  });
+});
+
+// Direct resort endpoint in server.js
+app.get('/api/direct-resorts', (req, res) => {
+  console.log('Direct resort endpoint accessed');
+  res.status(200).json({
+    success: true,
+    data: [
+      {
+        _id: "6845ad46063e86f16e607009",
+        name: "Lakeside Villa",
+        description: "Luxurious villa with stunning lake views and private pool",
+        price: 12999,
+        imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+        maxGuests: 6,
+        location: {
+          type: "Point",
+          coordinates: [76.6394, 12.2958]
+        },
+        createdAt: "2023-06-10T12:00:00.000Z",
+        updatedAt: "2023-06-10T12:00:00.000Z"
+      }
+    ]
+  });
+});
+
+// Direct single resort endpoint
+app.get('/api/direct-resorts/:id', (req, res) => {
+  console.log(`Direct single resort endpoint accessed for ID: ${req.params.id}`);
+  res.status(200).json({
+    success: true,
+    data: {
+      _id: "6845ad46063e86f16e607009",
+      name: "Lakeside Villa",
+      description: "Luxurious villa with stunning lake views and private pool",
+      price: 12999,
+      imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+      maxGuests: 6,
+      location: {
+        type: "Point",
+        coordinates: [76.6394, 12.2958]
+      },
+      createdAt: "2023-06-10T12:00:00.000Z",
+      updatedAt: "2023-06-10T12:00:00.000Z"
+    }
   });
 });
 
