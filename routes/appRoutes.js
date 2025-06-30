@@ -1,8 +1,6 @@
-// routes/appRoutes.js
 const express = require('express');
 const router = express.Router();
 
-// App update info endpoint
 router.get('/update-info', (req, res) => {
   res.json({
     success: true,
@@ -12,7 +10,7 @@ router.get('/update-info', (req, res) => {
       forceUpdate: false,
       updateMessage: "New features and bug fixes available. Please update to the latest version.",
       updateUrl: {
-        android: "https://play.google.com/store/apps/details?id=com.tarto.tech"
+        android: "https://play.google.com/store/apps/details?id=com.yourcompany.tarto"
       }
     }
   });
