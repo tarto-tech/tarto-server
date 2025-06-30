@@ -60,8 +60,10 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
+const appRoutes = require('./routes/appRoutes');
 
 // Routes
+app.use('/api/app', appRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
 app.use('/api/vehicles', vehicleRoutes);
