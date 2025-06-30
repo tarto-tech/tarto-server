@@ -438,7 +438,14 @@ try {
   console.warn('Package routes not loaded:', error.message);
 }
 
-// Simple resort routes are no longer needed
+// Load simple resort routes that don't depend on models
+try {
+  const simpleResortRoutes = require('./routes/simpleResortRoutes');
+  app.use('/api/simple-resorts', simpleResortRoutes);
+  console.log('Simple resort routes loaded successfully');
+} catch (error) {
+  console.warn('Simple resort routes not loaded:', error.message);
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -454,13 +461,139 @@ app.get('/app-version-manager', (req, res) => {
   res.sendFile(__dirname + '/public/app-version.html');
 });
 
-// App version endpoints are now handled by appRoutes.js
+// Super simple direct app version endpoints
+let versionData = {
+  latestVersion: "1.0.1",
+  minRequiredVersion: "1.0.0",
+  forceUpdate: false,
+  updateMessage: "New features and bug fixes available. Please update to the latest version.",
+  updateUrl: {
+    android: "https://play.google.com/store/apps/details?id=com.tarto.tech"
+  }
+};
 
-// Resort endpoints are now handled by the resort router
+app.get('/api/direct-update-info', (req, res) => {
+  console.log('Direct GET /direct-update-info accessed');
+  res.json({
+    success: true,
+    data: versionData
+  });
+});
 
-// Direct app routes are no longer needed
+// Add POST endpoint (since PUT might be blocked)
+app.post('/api/direct-update-info', (req, res) => {
+  console.log('Direct POST /direct-update-info accessed');
+  console.log('Request body:', req.body);
+  
+  // Update the in-memory data
+  versionData = { ...versionData, ...req.body };
+  
+  res.json({
+    success: true,
+    message: 'Update info updated successfully',
+    data: versionData
+  });
+});
 
-// Direct resort endpoints are no longer needed
+// Keep PUT endpoint as well
+app.put('/api/direct-update-info', (req, res) => {
+  console.log('Direct PUT /direct-update-info accessed');
+  console.log('Request body:', req.body);
+  
+  // Update the in-memory data
+  versionData = { ...versionData, ...req.body };
+  
+  res.json({
+    success: true,
+    message: 'Update info updated successfully',
+    data: versionData
+  });
+});
+
+// Hardcoded resort endpoints
+app.get('/api/hardcoded-resorts', (req, res) => {
+  console.log('Hardcoded resorts endpoint accessed');
+  res.status(200).json({
+    success: true,
+    data: [
+      {
+        _id: "6845ad46063e86f16e607009",
+        name: "Lakeside Villa",
+        description: "Luxurious villa with stunning lake views and private pool",
+        price: 12999,
+        imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+        maxGuests: 6
+      }
+    ]
+  });
+});
+
+// Test resort endpoint
+app.get('/api/resorts-test', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Resort test endpoint is working',
+    timestamp: new Date()
+  });
+});
+
+// Use direct app routes
+try {
+  const directAppRoutes = require('./routes/directAppRoutes');
+  app.use('/api', directAppRoutes);
+  console.log('Direct app routes loaded successfully');
+} catch (error) {
+  console.warn('Direct app routes not loaded:', error.message);
+}
+
+// Direct resort endpoint in server.js
+app.get('/api/direct-resorts', (req, res) => {
+  console.log('Direct resort endpoint accessed');
+  res.status(200).json({
+    success: true,
+    data: [
+      {
+        _id: "6845ad46063e86f16e607009",
+        name: "Lakeside Villa",
+        description: "Luxurious villa with stunning lake views and private pool",
+        price: 12999,
+        imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+        maxGuests: 6,
+        location: {
+          type: "Point",
+          coordinates: [76.6394, 12.2958]
+        },
+        createdAt: "2023-06-10T12:00:00.000Z",
+        updatedAt: "2023-06-10T12:00:00.000Z"
+      }
+    ]
+  });
+});
+
+// Direct single resort endpoint
+app.get('/api/direct-resorts/:id', (req, res) => {
+  console.log(`Direct single resort endpoint accessed for ID: ${req.params.id}`);
+  res.status(200).json({
+    success: true,
+    data: {
+      _id: "6845ad46063e86f16e607009",
+      name: "Lakeside Villa",
+      description: "Luxurious villa with stunning lake views and private pool",
+      price: 12999,
+      imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      amenities: ["Swimming Pool", "WiFi", "Air Conditioning", "Kitchen", "Parking"],
+      maxGuests: 6,
+      location: {
+        type: "Point",
+        coordinates: [76.6394, 12.2958]
+      },
+      createdAt: "2023-06-10T12:00:00.000Z",
+      updatedAt: "2023-06-10T12:00:00.000Z"
+    }
+  });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
