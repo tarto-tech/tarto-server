@@ -76,4 +76,30 @@ router.put('/update-info', async (req, res) => {
   }
 });
 
+// POST endpoint (identical to PUT for compatibility)
+router.post('/update-info', async (req, res) => {
+  try {
+    const latestVersion = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (latestVersion) {
+      Object.assign(latestVersion, req.body);
+      await latestVersion.save();
+    } else {
+      await new AppVersion(req.body).save();
+    }
+    
+    res.json({
+      success: true,
+      message: 'Update info updated successfully',
+      data: req.body
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update version info',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

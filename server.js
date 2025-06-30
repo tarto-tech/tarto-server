@@ -51,6 +51,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // Import routes after ensuring all dependencies are installed
 const userRoutes = require('./routes/userRoutes');
@@ -60,8 +61,10 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
+const appRoutes = require('./routes/appRoutes');
 
 // Routes
+app.use('/api', appRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
 app.use('/api/vehicles', vehicleRoutes);
@@ -453,6 +456,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// App version manager page
+app.get('/app-version-manager', (req, res) => {
+  res.sendFile(__dirname + '/public/app-version.html');
+});
+
 // Super simple direct app version endpoints
 let versionData = {
   latestVersion: "1.0.1",
@@ -472,6 +480,22 @@ app.get('/api/direct-update-info', (req, res) => {
   });
 });
 
+// Add POST endpoint (since PUT might be blocked)
+app.post('/api/direct-update-info', (req, res) => {
+  console.log('Direct POST /direct-update-info accessed');
+  console.log('Request body:', req.body);
+  
+  // Update the in-memory data
+  versionData = { ...versionData, ...req.body };
+  
+  res.json({
+    success: true,
+    message: 'Update info updated successfully',
+    data: versionData
+  });
+});
+
+// Keep PUT endpoint as well
 app.put('/api/direct-update-info', (req, res) => {
   console.log('Direct PUT /direct-update-info accessed');
   console.log('Request body:', req.body);
