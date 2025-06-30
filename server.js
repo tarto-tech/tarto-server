@@ -60,10 +60,8 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
-const appRoutes = require('./routes/appRoutes');
 
 // Routes
-app.use('/api/app', appRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
 app.use('/api/vehicles', vehicleRoutes);
@@ -455,6 +453,39 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Super simple direct app version endpoints
+let versionData = {
+  latestVersion: "1.0.1",
+  minRequiredVersion: "1.0.0",
+  forceUpdate: false,
+  updateMessage: "New features and bug fixes available. Please update to the latest version.",
+  updateUrl: {
+    android: "https://play.google.com/store/apps/details?id=com.tarto.tech"
+  }
+};
+
+app.get('/api/direct-update-info', (req, res) => {
+  console.log('Direct GET /direct-update-info accessed');
+  res.json({
+    success: true,
+    data: versionData
+  });
+});
+
+app.put('/api/direct-update-info', (req, res) => {
+  console.log('Direct PUT /direct-update-info accessed');
+  console.log('Request body:', req.body);
+  
+  // Update the in-memory data
+  versionData = { ...versionData, ...req.body };
+  
+  res.json({
+    success: true,
+    message: 'Update info updated successfully',
+    data: versionData
+  });
+});
+
 // Hardcoded resort endpoints
 app.get('/api/hardcoded-resorts', (req, res) => {
   console.log('Hardcoded resorts endpoint accessed');
@@ -482,6 +513,15 @@ app.get('/api/resorts-test', (req, res) => {
     timestamp: new Date()
   });
 });
+
+// Use direct app routes
+try {
+  const directAppRoutes = require('./routes/directAppRoutes');
+  app.use('/api', directAppRoutes);
+  console.log('Direct app routes loaded successfully');
+} catch (error) {
+  console.warn('Direct app routes not loaded:', error.message);
+}
 
 // Direct resort endpoint in server.js
 app.get('/api/direct-resorts', (req, res) => {
