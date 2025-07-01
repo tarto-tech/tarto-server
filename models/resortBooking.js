@@ -42,10 +42,6 @@ const resortBookingSchema = new mongoose.Schema({
       type: String,
       default: 'pending'
     }
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 }, { timestamps: true });
 
