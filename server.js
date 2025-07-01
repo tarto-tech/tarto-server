@@ -117,6 +117,36 @@ resortRouter.get('/bookings/user/:userId', async (req, res) => {
   }
 });
 
+// PUT update booking status
+resortRouter.put('/bookings/:bookingId', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const booking = await ResortBooking.findByIdAndUpdate(
+      req.params.bookingId,
+      { status },
+      { new: true }
+    ).populate('userId', 'name email phone')
+     .populate('resortId', 'name description price imageUrl amenities');
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update booking'
+    });
+  }
+});
+
 // GET single booking
 resortRouter.get('/bookings/:bookingId', async (req, res) => {
   try {
