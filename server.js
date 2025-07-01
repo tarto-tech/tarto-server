@@ -117,50 +117,6 @@ resortRouter.get('/bookings/user/:userId', async (req, res) => {
   }
 });
 
-// POST update booking status
-resortRouter.post('/bookings/:id/update-status', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    console.log(`Updating resort booking ${id} status to ${status}`);
-
-    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
-      });
-    }
-
-    const booking = await ResortBooking.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).populate('userId', 'name email phone')
-     .populate('resortId', 'name description price imageUrl amenities');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort booking not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: `Resort booking status updated to ${status}`,
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error updating resort booking status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update resort booking status',
-      error: error.message
-    });
-  }
-});
-
 // PATCH update booking status
 resortRouter.patch('/bookings/:id/status', async (req, res) => {
   try {
