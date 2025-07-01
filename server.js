@@ -117,49 +117,6 @@ resortRouter.get('/bookings/user/:userId', async (req, res) => {
   }
 });
 
-// POST update booking status
-resortRouter.post('/bookings/:bookingId/status', async (req, res) => {
-  try {
-    console.log('POST status update received:', req.params.bookingId, req.body);
-    const { status } = req.body;
-    
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: 'Status is required'
-      });
-    }
-    
-    const booking = await ResortBooking.findByIdAndUpdate(
-      req.params.bookingId,
-      { status },
-      { new: true }
-    ).populate('userId', 'name email phone')
-     .populate('resortId', 'name description price imageUrl amenities');
-    
-    if (!booking) {
-      console.log('Booking not found:', req.params.bookingId);
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-    
-    console.log('Booking updated successfully:', booking._id, booking.status);
-    res.json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error updating booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update booking',
-      error: error.message
-    });
-  }
-});
-
 // PATCH update booking status
 resortRouter.patch('/bookings/:bookingId/status', async (req, res) => {
   try {
