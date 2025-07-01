@@ -62,7 +62,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
-const resortBookingRoutes = require('./routes/resortBookingRoutes');
+// const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api', appRoutes);
@@ -73,7 +73,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/resort-bookings', resortBookingRoutes);
+// app.use('/api/resort-bookings', resortBookingRoutes);
 
 // Load resort routes with error handling
 try {
