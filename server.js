@@ -62,7 +62,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
-// const resortBookingRoutes = require('./routes/resortBookingRoutes');
+const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api', appRoutes);
@@ -73,7 +73,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-// app.use('/api/resort-bookings', resortBookingRoutes);
+app.use('/api/resort-bookings', resortBookingRoutes);
 
 // Resort routes
 const resortRouter = express.Router();
@@ -118,43 +118,44 @@ resortRouter.get('/bookings/user/:userId', async (req, res) => {
 });
 
 // PATCH update booking status
-resortRouter.patch('/bookings/:bookingId/status', async (req, res) => {
+resortRouter.patch('/bookings/:id/status', async (req, res) => {
   try {
-    console.log('PATCH request received:', req.params.bookingId, req.body);
+    const { id } = req.params;
     const { status } = req.body;
     
-    if (!status) {
+    console.log(`Updating resort booking ${id} status to ${status}`);
+
+    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Status is required'
+        message: 'Invalid status'
       });
     }
-    
+
     const booking = await ResortBooking.findByIdAndUpdate(
-      req.params.bookingId,
+      id,
       { status },
       { new: true }
     ).populate('userId', 'name email phone')
      .populate('resortId', 'name description price imageUrl amenities');
-    
+
     if (!booking) {
-      console.log('Booking not found:', req.params.bookingId);
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: 'Resort booking not found'
       });
     }
-    
-    console.log('Booking updated successfully:', booking._id, booking.status);
+
     res.json({
       success: true,
+      message: `Resort booking status updated to ${status}`,
       data: booking
     });
   } catch (error) {
-    console.error('Error updating booking:', error);
+    console.error('Error updating resort booking status:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update booking',
+      message: 'Failed to update resort booking status',
       error: error.message
     });
   }
