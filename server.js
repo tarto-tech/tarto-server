@@ -62,6 +62,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
+// const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api', appRoutes);
@@ -72,6 +73,81 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
+// Resort booking routes - added directly
+try {
+  const resortBookingRouter = express.Router();
+  
+  // ResortBooking model (reuse existing schema)
+  const ResortBooking = mongoose.model('ResortBooking');
+  
+  // GET all bookings
+  resortBookingRouter.get('/', async (req, res) => {
+    try {
+      const bookings = await ResortBooking.find()
+        .populate('userId', 'name email phone')
+        .populate('resortId', 'name description price');
+      
+      res.json({
+        success: true,
+        data: bookings
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch bookings'
+      });
+    }
+  });
+  
+  // GET single booking
+  resortBookingRouter.get('/:bookingId', async (req, res) => {
+    try {
+      const booking = await ResortBooking.findById(req.params.bookingId)
+        .populate('userId', 'name email phone')
+        .populate('resortId', 'name description price imageUrl amenities');
+      
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: booking
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch booking'
+      });
+    }
+  });
+  
+  // GET user bookings
+  resortBookingRouter.get('/user/:userId', async (req, res) => {
+    try {
+      const bookings = await ResortBooking.find({ userId: req.params.userId })
+        .populate('resortId', 'name description price imageUrl');
+      
+      res.json({
+        success: true,
+        data: bookings
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user bookings'
+      });
+    }
+  });
+  
+  app.use('/api/resort-bookings', resortBookingRouter);
+  console.log('Resort booking routes loaded successfully');
+} catch (error) {
+  console.warn('Resort booking routes not loaded:', error.message);
+}
 
 // Load resort routes with error handling
 try {
@@ -168,6 +244,108 @@ try {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch resort'
+      });
+    }
+  });
+  
+  // POST book resort
+  resortRouter.post('/:id/book', async (req, res) => {
+    try {
+      const { userId, checkInDate, checkOutDate, guests } = req.body;
+      const resortId = req.params.id;
+      
+      const resort = await Resort.findById(resortId);
+      if (!resort) {
+        return res.status(404).json({
+          success: false,
+          message: 'Resort not found'
+        });
+      }
+      
+      const totalPrice = resort.price * guests;
+      
+      const booking = new ResortBooking({
+        userId,
+        resortId,
+        checkInDate,
+        checkOutDate,
+        guests,
+        totalPrice
+      });
+      
+      await booking.save();
+      
+      res.status(201).json({
+        success: true,
+        data: booking
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create booking'
+      });
+    }
+  });
+  
+  // GET all bookings
+  resortRouter.get('/bookings/all', async (req, res) => {
+    try {
+      const bookings = await ResortBooking.find()
+        .populate('userId', 'name email phone')
+        .populate('resortId', 'name description price');
+      
+      res.json({
+        success: true,
+        data: bookings
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch bookings'
+      });
+    }
+  });
+  
+  // GET user bookings
+  resortRouter.get('/bookings/user/:userId', async (req, res) => {
+    try {
+      const bookings = await ResortBooking.find({ userId: req.params.userId })
+        .populate('resortId', 'name description price imageUrl');
+      
+      res.json({
+        success: true,
+        data: bookings
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user bookings'
+      });
+    }
+  });
+  
+  // GET single booking
+  resortRouter.get('/bookings/:bookingId', async (req, res) => {
+    try {
+      const booking = await ResortBooking.findById(req.params.bookingId)
+        .populate('userId', 'name email phone')
+        .populate('resortId', 'name description price imageUrl amenities');
+      
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: booking
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch booking'
       });
     }
   });
