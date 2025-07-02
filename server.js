@@ -75,6 +75,15 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 // app.use('/api/resort-bookings', resortBookingRoutes);
 
+// Try to load resort booking routes
+try {
+  const resortBookingRoutes = require('./routes/resortBookingRoutes');
+  app.use('/api/resort-bookings', resortBookingRoutes);
+  console.log('Resort booking routes loaded successfully');
+} catch (error) {
+  console.warn('Resort booking routes not loaded:', error.message);
+}
+
 // Resort routes (only for resort CRUD)
 const resortRouter = express.Router();
 const Resort = require('./models/Resort');
