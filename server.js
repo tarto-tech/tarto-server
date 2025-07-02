@@ -75,7 +75,14 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 // app.use('/api/resort-bookings', resortBookingRoutes);
 
-// Resort booking routes temporarily disabled
+// Resort booking routes
+try {
+  const resortBookingRoutes = require('./routes/resortBookingRoutes');
+  app.use('/api/resort-bookings', resortBookingRoutes);
+  console.log('Resort booking routes loaded successfully');
+} catch (error) {
+  console.warn('Resort booking routes not loaded:', error.message);
+}
 
 // Resort routes (only for resort CRUD)
 const resortRouter = express.Router();

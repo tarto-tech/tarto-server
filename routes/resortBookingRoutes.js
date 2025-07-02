@@ -1,7 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const ResortBooking = require('../models/ResortBooking');
-const Resort = require('../models/Resort');
+
+// Try to load models with error handling
+let ResortBooking, Resort;
+try {
+  ResortBooking = require('../models/ResortBooking');
+  Resort = require('../models/Resort');
+} catch (error) {
+  console.error('Failed to load models:', error.message);
+  // Export empty router if models fail to load
+  module.exports = router;
+  return;
+}
 
 // GET all bookings
 router.get('/all', async (req, res) => {
