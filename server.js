@@ -84,52 +84,42 @@ try {
   console.warn('Resort booking routes not loaded:', error.message);
 }
 
-// Resort routes (only for resort CRUD)
-const resortRouter = express.Router();
-const Resort = require('./models/Resort');
-
-// GET all resorts
-resortRouter.get('/', async (req, res) => {
-  try {
-    const resorts = await Resort.find();
-    res.json({
-      success: true,
-      data: resorts
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resorts'
-    });
-  }
-});
-
-// GET single resort
-resortRouter.get('/:id', async (req, res) => {
-  try {
-    const resort = await Resort.findById(req.params.id);
-    
-    if (!resort) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: resort
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resort'
-    });
-  }
-});
+// Resort routes
+try {
+  const resortRoutes = require('./routes/resortRoutes');
+  app.use('/api/resorts', resortRoutes);
+  console.log('Resort routes loaded successfully');
+} catch (error) {
+  console.warn('Resort routes not loaded:', error.message);
   
-app.use('/api/resorts', resortRouter);
-console.log('Resort routes loaded successfully');
+  // Fallback inline resort routes
+  const resortRouter = express.Router();
+  const Resort = require('./models/Resort');
+
+  resortRouter.get('/', async (req, res) => {
+    try {
+      const resorts = await Resort.find();
+      res.json({ success: true, data: resorts });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch resorts' });
+    }
+  });
+
+  resortRouter.get('/:id', async (req, res) => {
+    try {
+      const resort = await Resort.findById(req.params.id);
+      if (!resort) {
+        return res.status(404).json({ success: false, message: 'Resort not found' });
+      }
+      res.json({ success: true, data: resort });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to fetch resort' });
+    }
+  });
+  
+  app.use('/api/resorts', resortRouter);
+  console.log('Fallback resort routes loaded');
+}
 
 // Try to load packages route if it exists
 try {
