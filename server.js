@@ -75,118 +75,10 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/resort-bookings', resortBookingRoutes);
 
-// Resort routes
+// Resort routes (only for resort CRUD)
 const resortRouter = express.Router();
 const Resort = require('./models/Resort');
-const ResortBooking = require('./models/ResortBooking');
 
-// GET all bookings (must come before /:id routes)
-resortRouter.get('/bookings/all', async (req, res) => {
-  try {
-    const bookings = await ResortBooking.find()
-      .populate('userId', 'name email phone')
-      .populate('resortId', 'name description price');
-    
-    res.json({
-      success: true,
-      data: bookings
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch bookings'
-    });
-  }
-});
-
-// GET user bookings
-resortRouter.get('/bookings/user/:userId', async (req, res) => {
-  try {
-    const bookings = await ResortBooking.find({ userId: req.params.userId })
-      .populate('resortId', 'name description price imageUrl');
-    
-    res.json({
-      success: true,
-      data: bookings
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user bookings'
-    });
-  }
-});
-
-// PATCH update booking status
-resortRouter.patch('/bookings/:id/status', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    console.log(`Updating resort booking ${id} status to ${status}`);
-
-    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
-      });
-    }
-
-    const booking = await ResortBooking.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).populate('userId', 'name email phone')
-     .populate('resortId', 'name description price imageUrl amenities');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort booking not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: `Resort booking status updated to ${status}`,
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error updating resort booking status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update resort booking status',
-      error: error.message
-    });
-  }
-});
-
-// GET single booking
-resortRouter.get('/bookings/:bookingId', async (req, res) => {
-  try {
-    const booking = await ResortBooking.findById(req.params.bookingId)
-      .populate('userId', 'name email phone')
-      .populate('resortId', 'name description price imageUrl amenities');
-    
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch booking'
-    });
-  }
-});
-  
 // GET all resorts
 resortRouter.get('/', async (req, res) => {
   try {
@@ -223,45 +115,6 @@ resortRouter.get('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch resort'
-    });
-  }
-});
-
-// POST book resort
-resortRouter.post('/:id/book', async (req, res) => {
-  try {
-    const { userId, checkInDate, checkOutDate, guests } = req.body;
-    const resortId = req.params.id;
-    
-    const resort = await Resort.findById(resortId);
-    if (!resort) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resort not found'
-      });
-    }
-    
-    const totalPrice = resort.price * guests;
-    
-    const booking = new ResortBooking({
-      userId,
-      resortId,
-      checkInDate,
-      checkOutDate,
-      guests,
-      totalPrice
-    });
-    
-    await booking.save();
-    
-    res.status(201).json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create booking'
     });
   }
 });
