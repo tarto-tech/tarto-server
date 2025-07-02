@@ -173,7 +173,46 @@ router.get('/:bookingId', async (req, res) => {
   }
 });
 
-// POST book resort
+// POST create booking (new endpoint)
+router.post('/book', async (req, res) => {
+  try {
+    const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
+    
+    if (!userId || !resortId || !checkInDate || !checkOutDate || !guests || !totalPrice) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+    
+    const booking = new ResortBooking({
+      userId,
+      resortId,
+      checkInDate,
+      checkOutDate,
+      guests,
+      totalPrice,
+      status: 'pending'
+    });
+    
+    await booking.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Resort booking created successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Error creating resort booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create resort booking',
+      error: error.message
+    });
+  }
+});
+
+// POST book resort (legacy endpoint)
 router.post('/:id/book', async (req, res) => {
   try {
     const { userId, checkInDate, checkOutDate, guests } = req.body;
