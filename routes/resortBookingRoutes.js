@@ -1,16 +1,69 @@
 const express = require('express');
 const router = express.Router();
 
+const mongoose = require('mongoose');
+
 // Try to load models with error handling
 let ResortBooking, Resort;
 try {
   ResortBooking = require('../models/ResortBooking');
   Resort = require('../models/Resort');
 } catch (error) {
-  console.error('Failed to load models:', error.message);
-  // Export empty router if models fail to load
-  module.exports = router;
-  return;
+  console.error('Failed to load models, creating inline:', error.message);
+  
+  // Create ResortBooking model inline if file doesn't exist
+  const resortBookingSchema = new mongoose.Schema({
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    resortId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resort',
+      required: true
+    },
+    checkInDate: {
+      type: Date,
+      required: true
+    },
+    checkOutDate: {
+      type: Date,
+      required: true
+    },
+    guests: {
+      type: Number,
+      required: true,
+      default: 1
+    },
+    totalPrice: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+      default: 'pending'
+    },
+    payment: {
+      method: {
+        type: String,
+        default: 'cash'
+      },
+      status: {
+        type: String,
+        default: 'pending'
+      }
+    }
+  }, { timestamps: true });
+  
+  ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
+  
+  try {
+    Resort = require('../models/Resort');
+  } catch (resortError) {
+    console.error('Resort model also missing');
+  }
 }
 
 // GET all bookings
