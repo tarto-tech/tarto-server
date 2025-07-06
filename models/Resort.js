@@ -52,4 +52,4 @@ const resortSchema = new mongoose.Schema({
 
 resortSchema.index({ location: '2dsphere' });
 
-module.exports = mongoose.model('Resort', resortSchema);
+module.exports = mongoose.models.Resort || mongoose.model('Resort', resortSchema);

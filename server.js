@@ -65,13 +65,8 @@ try {
 }
 
 // Resort routes
-try {
-  const resortRoutes = require('./routes/resortRoutes');
-  app.use('/api/resorts', resortRoutes);
-  console.log('Resort routes loaded successfully');
-} catch (error) {
-  console.warn('Resort routes not loaded:', error.message);
-}
+const resortRoutes = require('./routes/resortRoutes');
+app.use('/api/resorts', resortRoutes);
 
 // Try to load packages route if it exists
 try {
@@ -90,6 +85,8 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date()
   });
 });
+
+
 
 // App version manager page
 app.get('/app-version-manager', (req, res) => {
