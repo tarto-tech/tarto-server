@@ -62,6 +62,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
+const appVersionRoutes = require('./routes/appVersionRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
@@ -73,6 +74,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
+app.use('/api/appversions', appVersionRoutes);
+app.use('/api', appVersionRoutes);
 // app.use('/api/resort-bookings', resortBookingRoutes);
 
 // Resort booking routes
