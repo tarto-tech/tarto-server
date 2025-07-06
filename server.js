@@ -11,35 +11,6 @@ dotenv.config();
 // Connect to MongoDB
 connectDB();
 
-// Create a test resort if none exist
-async function createTestResort() {
-  try {
-    const Resort = require('./models/Resort');
-    const count = await Resort.countDocuments();
-    
-    if (count === 0) {
-      console.log('No resorts found, creating a test resort');
-      const testResort = new Resort({
-        name: 'Test Resort',
-        description: 'A beautiful resort for testing',
-        price: 5000,
-        imageUrl: 'https://example.com/image.jpg',
-        amenities: ['WiFi', 'Pool', 'Spa'],
-        maxGuests: 4,
-        location: {
-          type: 'Point',
-          coordinates: [77.5946, 12.9716]
-        }
-      });
-      
-      await testResort.save();
-      console.log('Test resort created successfully');
-    }
-  } catch (error) {
-    console.error('Error creating test resort:', error);
-  }
-}
-
 // Call the function after connection is established
 mongoose.connection.once('open', () => {
   console.log('MongoDB connection established, checking for test data');
