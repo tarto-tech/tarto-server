@@ -65,8 +65,13 @@ try {
 }
 
 // Resort routes
-const resortRoutes = require('./routes/resortRoutes');
-app.use('/api/resorts', resortRoutes);
+try {
+  const resortRoutes = require('./routes/resortRoutes');
+  app.use('/api/resorts', resortRoutes);
+  console.log('Resort routes loaded successfully');
+} catch (error) {
+  console.warn('Resort routes not loaded:', error.message);
+}
 
 // Try to load packages route if it exists
 try {

@@ -22,7 +22,7 @@ const resortBookingSchema = new mongoose.Schema({
   guests: {
     type: Number,
     required: true,
-    default: 1
+    min: 1
   },
   totalPrice: {
     type: Number,
@@ -32,17 +32,9 @@ const resortBookingSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'confirmed', 'completed', 'cancelled'],
     default: 'pending'
-  },
-  payment: {
-    method: {
-      type: String,
-      default: 'cash'
-    },
-    status: {
-      type: String,
-      default: 'pending'
-    }
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('ResortBooking', resortBookingSchema);
+module.exports = mongoose.models.ResortBooking || mongoose.model('ResortBooking', resortBookingSchema);
