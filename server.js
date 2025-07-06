@@ -71,6 +71,18 @@ try {
   console.log('Resort routes loaded successfully');
 } catch (error) {
   console.warn('Resort routes not loaded:', error.message);
+  
+  // Simple fallback POST route
+  const Resort = require('./models/Resort');
+  app.post('/api/resorts', async (req, res) => {
+    try {
+      const resort = new Resort(req.body);
+      const savedResort = await resort.save();
+      res.status(201).json({ success: true, data: savedResort });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 }
 
 // Try to load packages route if it exists
