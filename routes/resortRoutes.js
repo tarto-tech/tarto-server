@@ -35,6 +35,31 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET single resort
+router.get('/:id', async (req, res) => {
+  try {
+    const resort = await Resort.findById(req.params.id);
+    
+    if (!resort) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: resort
+    });
+  } catch (error) {
+    console.error('Error fetching resort:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resort'
+    });
+  }
+});
+
 // POST create resort
 router.post('/', async (req, res) => {
   try {
@@ -77,6 +102,37 @@ router.post('/', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create resort',
+      error: error.message
+    });
+  }
+});
+
+// PUT update resort
+router.put('/:id', async (req, res) => {
+  try {
+    const resort = await Resort.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!resort) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Resort updated successfully',
+      data: resort
+    });
+  } catch (error) {
+    console.error('Error updating resort:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update resort',
       error: error.message
     });
   }
