@@ -138,4 +138,29 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE resort
+router.delete('/:id', async (req, res) => {
+  try {
+    const resort = await Resort.findByIdAndDelete(req.params.id);
+
+    if (!resort) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resort not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Resort deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting resort:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete resort'
+    });
+  }
+});
+
 module.exports = router;

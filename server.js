@@ -94,6 +94,20 @@ try {
   console.warn('Package routes not loaded:', error.message);
 }
 
+// Resort DELETE fallback
+const Resort = require('./models/Resort');
+app.delete('/api/resorts/:id', async (req, res) => {
+  try {
+    const resort = await Resort.findByIdAndDelete(req.params.id);
+    if (!resort) {
+      return res.status(404).json({ success: false, message: 'Resort not found' });
+    }
+    res.json({ success: true, message: 'Resort deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete resort' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
