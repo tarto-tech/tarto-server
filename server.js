@@ -11,11 +11,6 @@ dotenv.config();
 // Connect to MongoDB
 connectDB();
 
-// Call the function after connection is established
-mongoose.connection.once('open', () => {
-  console.log('MongoDB connection established');
-});
-
 const app = express();
 
 // Middleware
@@ -32,7 +27,6 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
-// const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api', appRoutes);
@@ -44,26 +38,6 @@ app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 
-// App version routes
-try {
-  const appVersionRoutes = require('./routes/appVersionRoutes');
-  app.use('/api/appversions', appVersionRoutes);
-  app.use('/api', appVersionRoutes);
-  console.log('App version routes loaded successfully');
-} catch (error) {
-  console.warn('App version routes not loaded:', error.message);
-}
-// app.use('/api/resort-bookings', resortBookingRoutes);
-
-// Resort booking routes
-try {
-  const resortBookingRoutes = require('./routes/resortBookingRoutes');
-  app.use('/api/resort-bookings', resortBookingRoutes);
-  console.log('Resort booking routes loaded successfully');
-} catch (error) {
-  console.warn('Resort booking routes not loaded:', error.message);
-}
-
 // Resort routes
 try {
   const resortRoutes = require('./routes/resortRoutes');
@@ -71,21 +45,9 @@ try {
   console.log('Resort routes loaded successfully');
 } catch (error) {
   console.warn('Resort routes not loaded:', error.message);
-  
-  // Simple fallback POST route
-  const Resort = require('./models/Resort');
-  app.post('/api/resorts', async (req, res) => {
-    try {
-      const resort = new Resort(req.body);
-      const savedResort = await resort.save();
-      res.status(201).json({ success: true, data: savedResort });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  });
 }
 
-// Try to load packages route if it exists
+// Package routes
 try {
   const packageRoutes = require('./routes/packages');
   app.use('/api/packages', packageRoutes);
@@ -93,20 +55,6 @@ try {
 } catch (error) {
   console.warn('Package routes not loaded:', error.message);
 }
-
-// Resort DELETE fallback
-const Resort = require('./models/Resort');
-app.delete('/api/resorts/:id', async (req, res) => {
-  try {
-    const resort = await Resort.findByIdAndDelete(req.params.id);
-    if (!resort) {
-      return res.status(404).json({ success: false, message: 'Resort not found' });
-    }
-    res.json({ success: true, message: 'Resort deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete resort' });
-  }
-});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -116,8 +64,6 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date()
   });
 });
-
-
 
 // App version manager page
 app.get('/app-version-manager', (req, res) => {
