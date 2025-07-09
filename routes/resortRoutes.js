@@ -1,55 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Resort = require('../models/Resort');
-const mongoose = require('mongoose');
-
-// Create ResortBooking model
-const resortBookingSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  resortId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Resort',
-    required: true
-  },
-  checkInDate: {
-    type: Date,
-    required: true
-  },
-  checkOutDate: {
-    type: Date,
-    required: true
-  },
-  guests: {
-    type: Number,
-    required: true,
-    default: 1
-  },
-  totalPrice: {
-    type: Number,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
-    default: 'pending'
-  },
-  payment: {
-    method: {
-      type: String,
-      default: 'cash'
-    },
-    status: {
-      type: String,
-      default: 'pending'
-    }
-  }
-}, { timestamps: true });
-
-const ResortBooking = mongoose.model('ResortBooking', resortBookingSchema);
 
 // GET all resorts
 router.get('/', async (req, res) => {
@@ -208,54 +159,6 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete resort'
-    });
-  }
-});
-
-// PATCH update resort booking status
-router.patch('/bookings/:bookingId/status', async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { status } = req.body;
-    
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: 'Status is required'
-      });
-    }
-    
-    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
-      });
-    }
-    
-    const booking = await ResortBooking.findByIdAndUpdate(
-      bookingId,
-      { status },
-      { new: true }
-    );
-    
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Booking status updated successfully',
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error updating booking status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update booking status'
     });
   }
 });
