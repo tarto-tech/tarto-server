@@ -48,45 +48,50 @@ router.get('/bookings/user/:userId', async (req, res) => {
   }
 });
 
-// Update package booking status
-router.patch('/bookings/:id/status', async (req, res) => {
+// PATCH update package booking status
+router.patch('/bookings/:bookingId/status', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { bookingId } = req.params;
     const { status } = req.body;
     
-    console.log(`Updating package booking ${id} status to ${status}`);
-
-    if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
+    if (!status) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid status'
+        message: 'Status is required'
       });
     }
-
+    
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
     const booking = await PackageBooking.findByIdAndUpdate(
-      id,
+      bookingId,
       { status },
       { new: true }
     );
-
+    
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Package booking not found'
+        message: 'Booking not found'
       });
     }
-
+    
     res.json({
       success: true,
-      message: `Package booking status updated to ${status}`,
+      message: 'Booking status updated successfully',
       data: booking
     });
   } catch (error) {
-    console.error('Error updating package booking status:', error);
+    console.error('Error updating booking status:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update package booking status',
-      error: error.message
+      message: 'Failed to update booking status'
     });
   }
 });
