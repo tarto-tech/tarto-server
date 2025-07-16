@@ -161,6 +161,12 @@ app.put('/api/bookings/:bookingId', async (req, res) => {
       });
     }
     
+    // Remove _id from destination to prevent ObjectId casting error
+    if (updateData.destination && updateData.destination._id) {
+      const { _id, ...destinationWithoutId } = updateData.destination;
+      updateData.destination = destinationWithoutId;
+    }
+    
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       updateData,
