@@ -153,6 +153,14 @@ app.put('/api/bookings/:bookingId', async (req, res) => {
     const { bookingId } = req.params;
     const updateData = { ...req.body, updatedAt: new Date() };
     
+    // Remove _id from stops to prevent ObjectId casting error
+    if (updateData.stops) {
+      updateData.stops = updateData.stops.map(stop => {
+        const { _id, ...stopWithoutId } = stop;
+        return stopWithoutId;
+      });
+    }
+    
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       updateData,
