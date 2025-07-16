@@ -108,6 +108,63 @@ app.delete('/api/resorts/:id', async (req, res) => {
   }
 });
 
+// Booking update endpoints
+const Booking = require('./models/BookingModel');
+
+// Update booking stops
+app.put('/api/bookings/:bookingId/stops', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { stops } = req.body;
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { stops, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    res.json({ success: true, data: updatedBooking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Update booking schedule
+app.put('/api/bookings/:bookingId/schedule', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { pickupDate, pickupTime, returnDate } = req.body;
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { pickupDate, pickupTime, returnDate, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    res.json({ success: true, data: updatedBooking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// General booking update
+app.put('/api/bookings/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const updateData = { ...req.body, updatedAt: new Date() };
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      updateData,
+      { new: true }
+    );
+    
+    res.json({ success: true, data: updatedBooking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
