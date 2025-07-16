@@ -151,21 +151,24 @@ app.put('/api/bookings/:bookingId/schedule', async (req, res) => {
 app.put('/api/bookings/:bookingId', async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const updateData = { ...req.body, updatedAt: new Date() };
+    let updateData = { ...req.body, updatedAt: new Date() };
     
-    // Remove _id from stops to prevent ObjectId casting error
-    if (updateData.stops) {
-      updateData.stops = updateData.stops.map(stop => {
-        const { _id, ...stopWithoutId } = stop;
-        return stopWithoutId;
-      });
+    // Function to recursively remove _id fields
+    function removeIds(obj) {
+      if (Array.isArray(obj)) {
+        return obj.map(item => removeIds(item));
+      } else if (obj && typeof obj === 'object') {
+        const { _id, ...objWithoutId } = obj;
+        const cleaned = {};
+        for (const [key, value] of Object.entries(objWithoutId)) {
+          cleaned[key] = removeIds(value);
+        }
+        return cleaned;
+      }
+      return obj;
     }
     
-    // Remove _id from destination to prevent ObjectId casting error
-    if (updateData.destination && updateData.destination._id) {
-      const { _id, ...destinationWithoutId } = updateData.destination;
-      updateData.destination = destinationWithoutId;
-    }
+    updateData = removeIds(updateData);
     
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,

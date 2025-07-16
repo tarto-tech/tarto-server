@@ -148,11 +148,6 @@ router.patch('/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    // ✅ Debug logs
-    console.log('PATCH /api/bookings/:id/status called');
-    console.log('Params:', req.params);
-    console.log('Body:', req.body);
-
     // Validate status
     if (!['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(status)) {
       return res.status(400).json({
@@ -198,6 +193,48 @@ router.patch('/:id/status', async (req, res) => {
       message: 'Failed to update booking status',
       error: error.message
     });
+  }
+});
+
+// General booking update
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    let updateData = { ...req.body, updatedAt: new Date() };
+    
+    // Function to recursively remove _id fields
+    function removeIds(obj) {
+      if (Array.isArray(obj)) {
+        return obj.map(item => removeIds(item));
+      } else if (obj && typeof obj === 'object') {
+        const { _id, ...objWithoutId } = obj;
+        const cleaned = {};
+        for (const [key, value] of Object.entries(objWithoutId)) {
+          cleaned[key] = removeIds(value);
+        }
+        return cleaned;
+      }
+      return obj;
+    }
+    
+    updateData = removeIds(updateData);
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!updatedBooking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.json({ success: true, data: updatedBooking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
