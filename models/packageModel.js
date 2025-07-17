@@ -47,7 +47,6 @@ type: [Number],
 required: true
 }
 },
-// Add these new fields
 totalSeats: {
 type: Number,
 default: 30
@@ -55,6 +54,12 @@ default: 30
 availableSeats: {
 type: Number,
 default: 30
+},
+// Dynamic organizer field without defaults
+organizer: {
+name: String,
+contact: String,
+description: String
 }
 }, {
 timestamps: true
