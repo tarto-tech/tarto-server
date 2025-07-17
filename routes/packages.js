@@ -54,40 +54,49 @@ router.put('/bookings/:bookingId', async (req, res) => {
     const { bookingId } = req.params;
     const { pickupAddress, seats } = req.body;
     
-    // Update the booking in your database
-    const updatedBooking = await PackageBooking.findByIdAndUpdate(
-      bookingId,
-      { pickupAddress, seats },
-      { new: true } // Return the updated document
-    );
-    
-    if (!updatedBooking) {
+    // Get the current booking to check original seat count
+    const currentBooking = await PackageBooking.findById(bookingId);
+    if (!currentBooking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
     
-    return res.status(200).json({ success: true, data: updatedBooking });
-  } catch (error) {
-    console.error('Error updating package booking:', error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PUT update package booking details
-router.put('/bookings/:bookingId', async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { pickupAddress, seats } = req.body;
+    // Get the package to check available seats
+    const package = await Package.findById(currentBooking.packageId);
+    if (!package) {
+      return res.status(404).json({ success: false, message: 'Package not found' });
+    }
     
-    // Update the booking in your database
+    // Calculate the seat difference
+    const seatDifference = seats - currentBooking.seats;
+    
+    // Check if enough seats are available
+    if (package.availableSeats != null && seatDifference > 0) {
+      if (seatDifference > package.availableSeats) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Only ${package.availableSeats} additional seats available` 
+        });
+      }
+      
+      // Update package available seats
+      await Package.findByIdAndUpdate(
+        package._id,
+        { $inc: { availableSeats: -seatDifference } }
+      );
+    } else if (seatDifference < 0) {
+      // If reducing seats, add them back to available
+      await Package.findByIdAndUpdate(
+        package._id,
+        { $inc: { availableSeats: Math.abs(seatDifference) } }
+      );
+    }
+    
+    // Update the booking
     const updatedBooking = await PackageBooking.findByIdAndUpdate(
       bookingId,
       { pickupAddress, seats },
-      { new: true } // Return the updated document
+      { new: true }
     );
-    
-    if (!updatedBooking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
     
     return res.status(200).json({ success: true, data: updatedBooking });
   } catch (error) {
