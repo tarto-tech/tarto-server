@@ -221,6 +221,25 @@ router.put('/:bookingId', async (req, res) => {
     console.log('Updating resort booking:', bookingId);
     console.log('Request body:', req.body);
     
+    // Calculate number of nights
+    const startDate = new Date(checkInDate);
+    const endDate = new Date(checkOutDate);
+    const nights = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    
+    // Get resort price per night
+    const booking = await ResortBooking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    const resort = await Resort.findById(booking.resortId);
+    if (!resort) {
+      return res.status(404).json({ success: false, message: 'Resort not found' });
+    }
+    
+    // Calculate total price
+    const calculatedTotalPrice = resort.price * nights * parseInt(guests);
+    
     // Update the booking in the database
     const updatedBooking = await ResortBooking.findByIdAndUpdate(
       bookingId,
@@ -228,14 +247,10 @@ router.put('/:bookingId', async (req, res) => {
         checkInDate, 
         checkOutDate, 
         guests: parseInt(guests),
-        totalPrice: parseFloat(totalPrice)
+        totalPrice: calculatedTotalPrice // Use calculated price for consistency
       },
       { new: true } // This option returns the updated document
     );
-    
-    if (!updatedBooking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
     
     console.log('Updated booking:', updatedBooking);
     return res.status(200).json({ success: true, data: updatedBooking });
