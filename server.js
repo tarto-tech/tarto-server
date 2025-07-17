@@ -72,8 +72,68 @@ try {
 } catch (error) {
   console.warn('Resort routes not loaded:', error.message);
   
-  // Simple fallback POST route
+  // Simple fallback routes for resorts
   const Resort = require('./models/Resort');
+  
+  // GET all resorts
+  app.get('/api/resorts', async (req, res) => {
+    try {
+      const { lat, lng, radius = 50 } = req.query;
+      let query = { isActive: true };
+      
+      if (lat && lng) {
+        query['location.coordinates'] = {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [parseFloat(lng), parseFloat(lat)]
+            },
+            $maxDistance: radius * 1000
+          }
+        };
+      }
+      
+      const resorts = await Resort.find(query).sort({ createdAt: -1 });
+      
+      res.json({
+        success: true,
+        data: resorts
+      });
+    } catch (error) {
+      console.error('Error fetching resorts:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch resorts'
+      });
+    }
+  });
+  
+  // GET single resort
+  app.get('/api/resorts/:id', async (req, res) => {
+    try {
+      const resort = await Resort.findById(req.params.id);
+      
+      if (!resort) {
+        return res.status(404).json({
+          success: false,
+          message: 'Resort not found'
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: resort
+      });
+    } catch (error) {
+      console.error('Error fetching resort:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch resort'
+      });
+    }
+  });
+  
+  // POST create resort
   app.post('/api/resorts', async (req, res) => {
     try {
       const resort = new Resort(req.body);
