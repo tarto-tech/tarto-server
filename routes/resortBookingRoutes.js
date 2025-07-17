@@ -212,6 +212,39 @@ router.post('/book', async (req, res) => {
   }
 });
 
+// PUT update resort booking
+router.put('/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { checkInDate, checkOutDate, guests, totalPrice } = req.body;
+    
+    console.log('Updating resort booking:', bookingId);
+    console.log('Request body:', req.body);
+    
+    // Update the booking in the database
+    const updatedBooking = await ResortBooking.findByIdAndUpdate(
+      bookingId,
+      { 
+        checkInDate, 
+        checkOutDate, 
+        guests: parseInt(guests),
+        totalPrice: parseFloat(totalPrice)
+      },
+      { new: true } // This option returns the updated document
+    );
+    
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    console.log('Updated booking:', updatedBooking);
+    return res.status(200).json({ success: true, data: updatedBooking });
+  } catch (error) {
+    console.error('Error updating resort booking:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST book resort (legacy endpoint)
 router.post('/:id/book', async (req, res) => {
   try {
