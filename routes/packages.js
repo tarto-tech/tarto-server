@@ -52,7 +52,7 @@ router.get('/bookings/user/:userId', async (req, res) => {
 router.put('/bookings/:bookingId', async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { pickupAddress, seats } = req.body;
+    const { pickupAddress, seats, totalAmount } = req.body;
     
     // Get the current booking to check original seat count
     const currentBooking = await PackageBooking.findById(bookingId);
@@ -91,10 +91,24 @@ router.put('/bookings/:bookingId', async (req, res) => {
       );
     }
     
+    // Always recalculate totalAmount when seats change
+    let updateData = { pickupAddress, seats };
+    
+    // Force recalculation of totalAmount when seats change
+    if (seats !== currentBooking.seats) {
+      updateData.totalAmount = package.price * seats;
+      console.log(`Recalculating totalAmount: ${seats} seats * ${package.price} = ${updateData.totalAmount}`);
+    } else if (totalAmount) {
+      // Only use provided totalAmount if seats didn't change
+      updateData.totalAmount = totalAmount;
+    }
+    
+    console.log('Update data:', updateData);
+    
     // Update the booking
     const updatedBooking = await PackageBooking.findByIdAndUpdate(
       bookingId,
-      { pickupAddress, seats },
+      updateData,
       { new: true }
     );
     
