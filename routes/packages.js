@@ -91,17 +91,24 @@ router.put('/bookings/:bookingId', async (req, res) => {
       );
     }
     
-    // Always recalculate totalAmount when seats change
-    let updateData = { pickupAddress, seats };
+    // Always include totalAmount in the update
+    let calculatedTotalAmount;
     
-    // Force recalculation of totalAmount when seats change
+    // Calculate new total amount based on seats
     if (seats !== currentBooking.seats) {
-      updateData.totalAmount = package.price * seats;
-      console.log(`Recalculating totalAmount: ${seats} seats * ${package.price} = ${updateData.totalAmount}`);
-    } else if (totalAmount) {
-      // Only use provided totalAmount if seats didn't change
-      updateData.totalAmount = totalAmount;
+      calculatedTotalAmount = package.price * seats;
+      console.log(`Recalculating totalAmount: ${seats} seats * ${package.price} = ${calculatedTotalAmount}`);
     }
+    
+    // Use provided totalAmount if available, otherwise use calculated or current
+    const finalTotalAmount = totalAmount || calculatedTotalAmount || currentBooking.totalAmount;
+    
+    // Create update data with totalAmount always included
+    const updateData = { 
+      pickupAddress, 
+      seats, 
+      totalAmount: finalTotalAmount 
+    };
     
     console.log('Update data:', updateData);
     
