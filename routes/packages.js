@@ -48,6 +48,54 @@ router.get('/bookings/user/:userId', async (req, res) => {
   }
 });
 
+// PUT update package booking details
+router.put('/bookings/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { pickupAddress, seats } = req.body;
+    
+    // Update the booking in your database
+    const updatedBooking = await PackageBooking.findByIdAndUpdate(
+      bookingId,
+      { pickupAddress, seats },
+      { new: true } // Return the updated document
+    );
+    
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    return res.status(200).json({ success: true, data: updatedBooking });
+  } catch (error) {
+    console.error('Error updating package booking:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT update package booking details
+router.put('/bookings/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { pickupAddress, seats } = req.body;
+    
+    // Update the booking in your database
+    const updatedBooking = await PackageBooking.findByIdAndUpdate(
+      bookingId,
+      { pickupAddress, seats },
+      { new: true } // Return the updated document
+    );
+    
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    return res.status(200).json({ success: true, data: updatedBooking });
+  } catch (error) {
+    console.error('Error updating package booking:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // PATCH update package booking status
 router.patch('/bookings/:bookingId/status', async (req, res) => {
   try {
