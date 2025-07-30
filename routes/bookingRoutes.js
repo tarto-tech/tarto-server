@@ -88,7 +88,7 @@ router.post('/', async (req, res) => {
         status: 'pending',
         amount: totalPrice
       },
-      status: 'pending'
+      status: payment?.status === 'completed' ? 'confirmed' : 'pending'
     });
 
     // Save booking
