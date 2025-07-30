@@ -26,12 +26,17 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed'],
+    enum: ['pending', 'processing', 'completed', 'failed', 'partial'],
     default: 'pending'
   },
   transactionId: String,
-  amount: Number
+  amount: Number,
+  advanceAmount: { type: Number, default: 0 },
+  remainingAmount: { type: Number, default: 0 },
+  paymentId: String,
+  paidAt: Date
 }, { _id: false });
+
 
 const bookingSchema = new mongoose.Schema({
   userId: {
