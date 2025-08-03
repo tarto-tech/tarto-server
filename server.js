@@ -154,8 +154,29 @@ try {
   console.warn('Package routes not loaded:', error.message);
 }
 
-// Resort DELETE fallback
+// Resort UPDATE test endpoint
 const Resort = require('./models/Resort');
+app.patch('/api/resorts/:id', async (req, res) => {
+  try {
+    console.log('PATCH resort request received:', req.params.id, req.body);
+    const resort = await Resort.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
+    if (!resort) {
+      return res.status(404).json({ success: false, message: 'Resort not found' });
+    }
+    
+    res.json({ success: true, data: resort });
+  } catch (error) {
+    console.error('Error updating resort:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Resort DELETE fallback
 app.delete('/api/resorts/:id', async (req, res) => {
   try {
     const resort = await Resort.findByIdAndDelete(req.params.id);
