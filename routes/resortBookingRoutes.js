@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // Try to load models with error handling
 let ResortBooking, Resort;
 try {
-  ResortBooking = require('../models/resortBooking');
+  ResortBooking = require('../models/ResortBooking');
   Resort = require('../models/Resort');
 } catch (error) {
   console.error('Failed to load models, creating inline:', error.message);
@@ -45,14 +45,15 @@ try {
       enum: ['pending', 'confirmed', 'completed', 'cancelled'],
       default: 'pending'
     },
-    paymentMode: {
-      type: String,
-      enum: ['upi', 'hotel'],
-      default: 'hotel'
-    },
-    paymentId: {
-      type: String,
-      default: null
+    payment: {
+      method: {
+        type: String,
+        default: 'cash'
+      },
+      status: {
+        type: String,
+        default: 'pending'
+      }
     }
   }, { timestamps: true });
   
@@ -175,7 +176,7 @@ router.get('/:bookingId', async (req, res) => {
 // POST create booking (new endpoint)
 router.post('/book', async (req, res) => {
   try {
-    const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
+    const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
     
     if (!userId || !resortId || !checkInDate || !checkOutDate || !guests || !totalPrice) {
       return res.status(400).json({
@@ -191,9 +192,7 @@ router.post('/book', async (req, res) => {
       checkOutDate,
       guests,
       totalPrice,
-      status: 'pending',
-      paymentMode: paymentMode || 'hotel',
-      paymentId: paymentId || null
+      status: 'pending'
     });
     
     await booking.save();
@@ -277,17 +276,13 @@ router.post('/:id/book', async (req, res) => {
     
     const totalPrice = resort.price * guests;
     
-    const { paymentMode, paymentId } = req.body;
-    
     const booking = new ResortBooking({
       userId,
       resortId,
       checkInDate,
       checkOutDate,
       guests,
-      totalPrice,
-      paymentMode: paymentMode || 'hotel',
-      paymentId: paymentId || null
+      totalPrice
     });
     
     await booking.save();
