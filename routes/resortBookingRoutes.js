@@ -45,15 +45,14 @@ try {
       enum: ['pending', 'confirmed', 'completed', 'cancelled'],
       default: 'pending'
     },
-    payment: {
-      method: {
-        type: String,
-        default: 'cash'
-      },
-      status: {
-        type: String,
-        default: 'pending'
-      }
+    paymentMode: {
+      type: String,
+      enum: ['upi', 'hotel'],
+      default: 'hotel'
+    },
+    paymentId: {
+      type: String,
+      default: null
     }
   }, { timestamps: true });
   
@@ -176,7 +175,7 @@ router.get('/:bookingId', async (req, res) => {
 // POST create booking (new endpoint)
 router.post('/book', async (req, res) => {
   try {
-    const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice } = req.body;
+    const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
     
     if (!userId || !resortId || !checkInDate || !checkOutDate || !guests || !totalPrice) {
       return res.status(400).json({
@@ -192,7 +191,9 @@ router.post('/book', async (req, res) => {
       checkOutDate,
       guests,
       totalPrice,
-      status: 'pending'
+      status: 'pending',
+      paymentMode: paymentMode || 'hotel',
+      paymentId: paymentId || null
     });
     
     await booking.save();
@@ -276,13 +277,17 @@ router.post('/:id/book', async (req, res) => {
     
     const totalPrice = resort.price * guests;
     
+    const { paymentMode, paymentId } = req.body;
+    
     const booking = new ResortBooking({
       userId,
       resortId,
       checkInDate,
       checkOutDate,
       guests,
-      totalPrice
+      totalPrice,
+      paymentMode: paymentMode || 'hotel',
+      paymentId: paymentId || null
     });
     
     await booking.save();
