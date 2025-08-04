@@ -281,7 +281,56 @@ router.post('/book', async (req, res) => {
 // Create a new package
 router.post('/', async (req, res) => {
   try {
-    const package = new Package(req.body);
+    const {
+      title,
+      description,
+      price,
+      imageUrl,
+      places,
+      amenities,
+      duration,
+      availableLocations,
+      location,
+      totalSeats,
+      availableSeats,
+      organizer,
+      startDate,
+      endDate
+    } = req.body;
+
+    // Validate required fields including new date fields
+    if (!title || !description || !price || !imageUrl || !duration || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: title, description, price, imageUrl, duration, startDate, endDate'
+      });
+    }
+
+    // Validate that endDate is after startDate
+    if (new Date(endDate) <= new Date(startDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be after start date'
+      });
+    }
+
+    const package = new Package({
+      title,
+      description,
+      price,
+      imageUrl,
+      places: places || [],
+      amenities: amenities || {},
+      duration,
+      availableLocations: availableLocations || [],
+      location,
+      totalSeats: totalSeats || 30,
+      availableSeats: availableSeats || totalSeats || 30,
+      organizer,
+      startDate,
+      endDate
+    });
+
     await package.save();
 
     res.status(201).json({
@@ -303,6 +352,16 @@ router.put('/:id', async (req, res) => {
   try {
     console.log('Updating package ID:', req.params.id);
     console.log('Update data:', req.body);
+
+    // Validate dates if both are provided
+    if (req.body.startDate && req.body.endDate) {
+      if (new Date(req.body.endDate) <= new Date(req.body.startDate)) {
+        return res.status(400).json({
+          success: false,
+          message: 'End date must be after start date'
+        });
+      }
+    }
 
     const updatedPackage = await Package.findByIdAndUpdate(
       req.params.id,

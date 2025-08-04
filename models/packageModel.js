@@ -1,4 +1,4 @@
- // models/packageModel.js
+// models/packageModel.js
 const mongoose = require('mongoose');
 
 const packageSchema = new mongoose.Schema({
@@ -60,6 +60,14 @@ organizer: {
 name: String,
 contact: String,
 description: String
+},
+startDate: {
+type: Date,
+required: [true, 'Package start date is required']
+},
+endDate: {
+type: Date,
+required: [true, 'Package end date is required']
 }
 }, {
 timestamps: true
