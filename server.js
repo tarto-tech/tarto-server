@@ -70,6 +70,8 @@ try {
     try {
       const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
       
+      console.log('Payment data received:', { paymentMode, paymentId });
+      
       const booking = new ResortBooking({
         userId,
         resortId,
@@ -81,7 +83,7 @@ try {
         payment: {
           method: paymentMode === 'upi' ? 'upi' : 'cash',
           status: paymentMode === 'upi' ? 'completed' : 'pending',
-          transactionId: paymentId || null
+          transactionId: paymentMode === 'upi' ? paymentId : null
         }
       });
       
