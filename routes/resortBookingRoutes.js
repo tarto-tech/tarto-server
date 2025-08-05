@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // Try to load models with error handling
 let ResortBooking, Resort;
 try {
-  ResortBooking = require('../models/ResortBooking');
+  ResortBooking = require('../models/resortBooking');
   Resort = require('../models/Resort');
 } catch (error) {
   console.error('Failed to load models, creating inline:', error.message);
