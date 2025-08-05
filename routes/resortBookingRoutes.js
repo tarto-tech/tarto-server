@@ -46,14 +46,19 @@ try {
       enum: ['pending', 'confirmed', 'completed', 'cancelled'],
       default: 'pending'
     },
-    paymentMode: {
-      type: String,
-      enum: ['upi', 'hotel'],
-      default: 'hotel'
-    },
-    paymentId: {
-      type: String,
-      default: null
+    payment: {
+      method: {
+        type: String,
+        default: 'cash'
+      },
+      status: {
+        type: String,
+        default: 'pending'
+      },
+      transactionId: {
+        type: String,
+        default: null
+      }
     }
   }, { timestamps: true });
   
@@ -195,8 +200,11 @@ router.post('/book', async (req, res) => {
       guests,
       totalPrice,
       status: 'pending',
-      paymentMode: paymentMode || 'hotel',
-      paymentId: paymentId || null
+      payment: {
+        method: paymentMode === 'upi' ? 'upi' : 'cash',
+        status: paymentMode === 'upi' ? 'completed' : 'pending',
+        transactionId: paymentId || null
+      }
     });
     
     console.log('📝 Booking object before save:', booking.toObject());
@@ -291,8 +299,11 @@ router.post('/:id/book', async (req, res) => {
       checkOutDate,
       guests,
       totalPrice,
-      paymentMode: paymentMode || 'hotel',
-      paymentId: paymentId || null
+      payment: {
+        method: paymentMode === 'upi' ? 'upi' : 'cash',
+        status: paymentMode === 'upi' ? 'completed' : 'pending',
+        transactionId: paymentId || null
+      }
     });
     
     await booking.save();
