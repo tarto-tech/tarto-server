@@ -181,7 +181,11 @@ router.get('/:bookingId', async (req, res) => {
 // POST create booking (new endpoint)
 router.post('/book', async (req, res) => {
   try {
+    console.log('📝 Full request body received:', JSON.stringify(req.body, null, 2));
+    
     const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
+    
+    console.log('📝 Extracted payment fields:', { paymentMode, paymentId });
     
     if (!userId || !resortId || !checkInDate || !checkOutDate || !guests || !totalPrice) {
       return res.status(400).json({
@@ -189,8 +193,6 @@ router.post('/book', async (req, res) => {
         message: 'Missing required fields'
       });
     }
-    
-    console.log('📝 Creating booking with payment data:', { paymentMode, paymentId });
     
     const booking = new ResortBooking({
       userId,
