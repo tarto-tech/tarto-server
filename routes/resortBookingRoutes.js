@@ -199,7 +199,6 @@ router.post('/book', async (req, res) => {
       });
     }
     
-    // Force UPI for testing
     const booking = new ResortBooking({
       userId,
       resortId,
@@ -209,9 +208,9 @@ router.post('/book', async (req, res) => {
       totalPrice,
       status: 'pending',
       payment: {
-        method: 'upi',
-        status: 'completed',
-        transactionId: paymentId || 'test_transaction_id'
+        method: paymentMode === 'upi' ? 'upi' : 'cash',
+        status: paymentMode === 'upi' ? 'completed' : 'pending',
+        transactionId: paymentMode === 'upi' ? paymentId : null
       }
     });
     
