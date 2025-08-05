@@ -62,6 +62,44 @@ try {
   console.log('Resort booking routes loaded successfully');
 } catch (error) {
   console.warn('Resort booking routes not loaded:', error.message);
+  
+  // Fallback resort booking endpoint with UPI support
+  const ResortBooking = require('./models/resortBooking');
+  
+  app.post('/api/resort-bookings/book', async (req, res) => {
+    try {
+      const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
+      
+      const booking = new ResortBooking({
+        userId,
+        resortId,
+        checkInDate,
+        checkOutDate,
+        guests,
+        totalPrice,
+        status: 'pending',
+        payment: {
+          method: paymentMode === 'upi' ? 'upi' : 'cash',
+          status: paymentMode === 'upi' ? 'completed' : 'pending',
+          transactionId: paymentId || null
+        }
+      });
+      
+      await booking.save();
+      
+      res.status(201).json({
+        success: true,
+        message: 'Resort booking created successfully',
+        data: booking
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create resort booking',
+        error: error.message
+      });
+    }
+  });
 }
 
 // Resort routes
