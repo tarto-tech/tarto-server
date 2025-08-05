@@ -33,14 +33,19 @@ const resortBookingSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'completed', 'cancelled'],
     default: 'pending'
   },
-  paymentMode: {
-    type: String,
-    enum: ['upi', 'hotel'],
-    default: 'hotel'
-  },
-  paymentId: {
-    type: String,
-    default: null
+  payment: {
+    method: {
+      type: String,
+      default: 'cash'
+    },
+    status: {
+      type: String,
+      default: 'pending'
+    },
+    transactionId: {
+      type: String,
+      default: null
+    }
   }
 }, {
   timestamps: true
