@@ -178,6 +178,11 @@ router.get('/:bookingId', async (req, res) => {
   }
 });
 
+// Test endpoint to verify code version
+router.get('/test', (req, res) => {
+  res.json({ message: 'Resort booking routes updated - Version 2.0', timestamp: new Date() });
+});
+
 // POST create booking (new endpoint)
 router.post('/book', async (req, res) => {
   try {
