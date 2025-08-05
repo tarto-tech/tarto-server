@@ -8,8 +8,9 @@ let ResortBooking, Resort;
 try {
   ResortBooking = require('../models/resortBooking');
   Resort = require('../models/Resort');
+  console.log('✅ Successfully loaded ResortBooking model from file');
 } catch (error) {
-  console.error('Failed to load models, creating inline:', error.message);
+  console.error('❌ Failed to load models, creating inline:', error.message);
   
   // Create ResortBooking model inline if file doesn't exist
   const resortBookingSchema = new mongoose.Schema({
@@ -184,6 +185,8 @@ router.post('/book', async (req, res) => {
       });
     }
     
+    console.log('📝 Creating booking with payment data:', { paymentMode, paymentId });
+    
     const booking = new ResortBooking({
       userId,
       resortId,
@@ -196,7 +199,9 @@ router.post('/book', async (req, res) => {
       paymentId: paymentId || null
     });
     
+    console.log('📝 Booking object before save:', booking.toObject());
     await booking.save();
+    console.log('✅ Booking saved successfully:', booking.toObject());
     
     res.status(201).json({
       success: true,
