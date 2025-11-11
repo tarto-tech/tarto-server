@@ -194,60 +194,58 @@ try {
   console.warn('Package routes not loaded:', error.message);
 }
 
-// Airport routes
-try {
-  const airportRoutes = require('./routes/airportRoutes');
-  app.use('/api/airports', airportRoutes);
-  console.log('Airport routes loaded successfully');
-} catch (error) {
-  console.warn('Airport routes not loaded:', error.message);
-  
-  // Fallback airport routes
-  const Airport = require('./models/Airport');
-  
-  // GET all airports
-  app.get('/api/airports', async (req, res) => {
-    try {
-      const airports = await Airport.find({ active: true }).sort({ city: 1 });
-      res.json({ success: true, data: airports });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to fetch airports' });
-    }
-  });
-  
-  // POST create airport
-  app.post('/api/airports', async (req, res) => {
-    try {
-      const airport = new Airport(req.body);
-      const savedAirport = await airport.save();
-      res.status(201).json({ success: true, data: savedAirport });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to create airport' });
-    }
-  });
-  
-  // PUT update airport
-  app.put('/api/airports/:id', async (req, res) => {
-    try {
-      const airport = await Airport.findByIdAndUpdate(req.params.id, req.body, { new: true });
-      if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
-      res.json({ success: true, data: airport });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to update airport' });
-    }
-  });
-  
-  // DELETE airport
-  app.delete('/api/airports/:id', async (req, res) => {
-    try {
-      const airport = await Airport.findByIdAndDelete(req.params.id);
-      if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
-      res.json({ success: true, message: 'Airport deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to delete airport' });
-    }
-  });
-}
+// Airport routes - Direct implementation
+const airportSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  code: { type: String, required: true, unique: true, uppercase: true },
+  city: { type: String, required: true, trim: true },
+  active: { type: Boolean, default: true }
+}, { timestamps: true });
+
+const Airport = mongoose.models.Airport || mongoose.model('Airport', airportSchema);
+
+// GET all airports
+app.get('/api/airports', async (req, res) => {
+  try {
+    const airports = await Airport.find({ active: true }).sort({ city: 1 });
+    res.json({ success: true, data: airports });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch airports' });
+  }
+});
+
+// POST create airport
+app.post('/api/airports', async (req, res) => {
+  try {
+    const airport = new Airport(req.body);
+    const savedAirport = await airport.save();
+    res.status(201).json({ success: true, data: savedAirport });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create airport' });
+  }
+});
+
+// PUT update airport
+app.put('/api/airports/:id', async (req, res) => {
+  try {
+    const airport = await Airport.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
+    res.json({ success: true, data: airport });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update airport' });
+  }
+});
+
+// DELETE airport
+app.delete('/api/airports/:id', async (req, res) => {
+  try {
+    const airport = await Airport.findByIdAndDelete(req.params.id);
+    if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
+    res.json({ success: true, message: 'Airport deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete airport' });
+  }
+});
 
 // Resort UPDATE test endpoint
 const Resort = require('./models/Resort');
