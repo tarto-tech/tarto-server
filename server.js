@@ -199,6 +199,8 @@ const airportSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   code: { type: String, required: true, unique: true, uppercase: true },
   city: { type: String, required: true, trim: true },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -365,24 +367,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Simple airports endpoint
-app.get('/api/airports', (req, res) => {
-  res.json({
-    success: true,
-    data: [
-      { _id: '1', name: 'Kempegowda International Airport', code: 'BLR', city: 'Bangalore', active: true },
-      { _id: '2', name: 'Chhatrapati Shivaji Maharaj International Airport', code: 'BOM', city: 'Mumbai', active: true },
-      { _id: '3', name: 'Indira Gandhi International Airport', code: 'DEL', city: 'Delhi', active: true },
-      { _id: '4', name: 'Chennai International Airport', code: 'MAA', city: 'Chennai', active: true },
-      { _id: '5', name: 'Netaji Subhas Chandra Bose International Airport', code: 'CCU', city: 'Kolkata', active: true },
-      { _id: '6', name: 'Rajiv Gandhi International Airport', code: 'HYD', city: 'Hyderabad', active: true }
-    ]
-  });
-});
 
-app.post('/api/airports', (req, res) => {
-  res.status(201).json({ success: true, data: { _id: Date.now().toString(), ...req.body, active: true } });
-});
 
 
 
