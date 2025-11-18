@@ -64,6 +64,7 @@ try {
   console.log('Resort booking routes loaded successfully');
 } catch (error) {
   console.warn('Resort booking routes not loaded:', error.message);
+}
 
 // Airport booking routes
 try {
@@ -72,8 +73,10 @@ try {
   console.log('Airport booking routes loaded successfully');
 } catch (error) {
   console.warn('Airport booking routes not loaded:', error.message);
-  
-  // Fallback resort booking endpoint with UPI support
+}
+
+// Fallback resort booking endpoint with UPI support
+try {
   const ResortBooking = require('./models/resortBooking');
   
   app.post('/api/resort-bookings/book', async (req, res) => {
@@ -112,6 +115,8 @@ try {
       });
     }
   });
+} catch (error) {
+  console.warn('Resort booking fallback not loaded:', error.message);
 }
 
 // Resort routes
