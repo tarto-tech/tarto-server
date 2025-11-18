@@ -33,6 +33,7 @@ const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
 const airportBookingNewRoutes = require('./routes/airportBookingNewRoutes');
+const rentalBookingRoutes = require('./routes/rentalBookingRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
@@ -45,6 +46,7 @@ app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/airport-bookings', airportBookingNewRoutes);
+app.use('/api/rental-bookings', rentalBookingRoutes);
 
 // App version routes
 try {
