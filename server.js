@@ -32,6 +32,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
+const airportBookingNewRoutes = require('./routes/airportBookingNewRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
@@ -43,6 +44,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
+app.use('/api/airport-bookings', airportBookingNewRoutes);
 
 // App version routes
 try {
@@ -62,6 +64,14 @@ try {
   console.log('Resort booking routes loaded successfully');
 } catch (error) {
   console.warn('Resort booking routes not loaded:', error.message);
+
+// Airport booking routes
+try {
+  const airportBookingRoutes = require('./routes/airportBookingRoutes');
+  app.use('/api/airport-bookings', airportBookingRoutes);
+  console.log('Airport booking routes loaded successfully');
+} catch (error) {
+  console.warn('Airport booking routes not loaded:', error.message);
   
   // Fallback resort booking endpoint with UPI support
   const ResortBooking = require('./models/resortBooking');
@@ -355,6 +365,66 @@ app.put('/api/bookings/:bookingId', async (req, res) => {
     res.json({ success: true, data: updatedBooking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Airport booking endpoint
+app.post('/api/bookings', async (req, res) => {
+  try {
+    const requiredFields = [
+      'userId', 'userName', 'userPhone', 'userEmail', 'bookingType',
+      'airportCode', 'airportName', 'direction', 'pickupDate', 'pickupTime',
+      'pickupLocation', 'pickupLat', 'pickupLng', 'vehicleId', 'vehicleName',
+      'vehicleType', 'distance', 'totalPrice', 'fare', 'status', 'bookingStatus'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+    
+    const airportBookingSchema = new mongoose.Schema({
+      userId: String,
+      userName: String,
+      userPhone: String,
+      userEmail: String,
+      bookingType: String,
+      airportCode: String,
+      airportName: String,
+      direction: String,
+      pickupDate: Date,
+      pickupTime: String,
+      pickupLocation: String,
+      pickupLat: Number,
+      pickupLng: Number,
+      vehicleId: String,
+      vehicleName: String,
+      vehicleType: String,
+      distance: Number,
+      totalPrice: Number,
+      fare: Number,
+      status: String,
+      bookingStatus: String
+    }, { timestamps: true });
+    
+    const AirportBooking = mongoose.models.AirportBooking || mongoose.model('AirportBooking', airportBookingSchema);
+    
+    const booking = new AirportBooking(req.body);
+    const savedBooking = await booking.save();
+    
+    res.status(201).json({
+      success: true,
+      bookingId: savedBooking._id,
+      message: 'Booking created successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create booking'
+    });
   }
 });
 
