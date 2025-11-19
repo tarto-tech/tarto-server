@@ -41,10 +41,15 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET all bookings
+// GET airport bookings by user
 router.get('/', async (req, res) => {
   try {
-    const bookings = await AirportBooking.find().sort({ createdAt: -1 });
+    const { userId } = req.query;
+    let query = {};
+    if (userId) {
+      query.userId = userId;
+    }
+    const bookings = await AirportBooking.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: bookings });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch bookings' });
@@ -158,6 +163,36 @@ router.patch('/:bookingId/status', async (req, res) => {
     res.json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update booking status' });
+  }
+});
+
+// DELETE airport booking
+router.delete('/:bookingId', async (req, res) => {
+  try {
+    const booking = await AirportBooking.findByIdAndDelete(req.params.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to cancel booking' });
+  }
+});
+
+// PUT update airport booking
+router.put('/:bookingId', async (req, res) => {
+  try {
+    const booking = await AirportBooking.findByIdAndUpdate(
+      req.params.bookingId,
+      req.body,
+      { new: true }
+    );
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update booking' });
   }
 });
 

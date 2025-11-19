@@ -45,9 +45,7 @@ router.post('/', async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Rental booking created successfully',
-      data: savedBooking,
-      bookingId: savedBooking._id
+      data: { _id: savedBooking._id }
     });
     
   } catch (error) {
@@ -228,6 +226,36 @@ router.patch('/:bookingId/status', async (req, res) => {
     res.json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update booking status' });
+  }
+});
+
+// DELETE rental booking
+router.delete('/:bookingId', async (req, res) => {
+  try {
+    const booking = await RentalBooking.findByIdAndDelete(req.params.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to cancel booking' });
+  }
+});
+
+// PUT update rental booking
+router.put('/:bookingId', async (req, res) => {
+  try {
+    const booking = await RentalBooking.findByIdAndUpdate(
+      req.params.bookingId,
+      req.body,
+      { new: true }
+    );
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update booking' });
   }
 });
 
