@@ -207,6 +207,45 @@ router.get('/:driverId/earnings', async (req, res) => {
   }
 });
 
+// PUT /drivers/:id/approve - Approve driver
+router.put('/:id/approve', async (req, res) => {
+  try {
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.id,
+      { status: 'approved' },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /drivers/:id/status - Update driver status
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {
