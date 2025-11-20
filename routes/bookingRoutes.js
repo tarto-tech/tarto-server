@@ -3,6 +3,8 @@ const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const Booking = require('../models/BookingModel');
 const User = require('../models/userModel');
+const AirportBooking = require('../models/AirportBookingNew');
+const RentalBooking = require('../models/RentalBooking');
 
 // Get all bookings (for admin panel)
 // IMPORTANT: This route must come BEFORE the /:id route
@@ -110,6 +112,45 @@ router.post('/', async (req, res) => {
       message: 'Failed to create booking',
       error: error.message
     });
+  }
+});
+
+// GET /bookings/driver/:driverId - Get all bookings for driver
+router.get('/driver/:driverId', async (req, res) => {
+  try {
+    const driverId = req.params.driverId;
+    
+    const airportBookings = await AirportBooking.find({ driverId }).sort({ createdAt: -1 });
+    const rentalBookings = await RentalBooking.find({ driverId }).sort({ createdAt: -1 });
+    
+    const bookings = [
+      ...airportBookings.map(b => ({
+        id: b._id,
+        type: 'airport',
+        pickup: b.pickupLocation?.name || b.source,
+        drop: b.dropLocation?.name || b.destination,
+        date: b.scheduledDate,
+        time: b.scheduledTime,
+        status: b.status,
+        amount: b.totalPrice,
+        customer: { name: b.userName, phone: b.userPhone }
+      })),
+      ...rentalBookings.map(b => ({
+        id: b._id,
+        type: 'rental',
+        pickup: b.pickupLocation?.name,
+        drop: 'Rental',
+        date: b.scheduledDate,
+        time: b.scheduledTime,
+        status: b.status,
+        amount: b.totalAmount,
+        customer: { name: b.userName, phone: b.userPhone }
+      }))
+    ];
+    
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch bookings' });
   }
 });
 
@@ -354,6 +395,101 @@ router.post('/:id/cancel', async (req, res) => {
       success: false,
       message: 'Failed to cancel booking'
     });
+  }
+});
+
+// POST /bookings/:bookingId/accept - Accept booking
+router.post('/:bookingId/accept', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { driverId } = req.body;
+    
+    let booking = await AirportBooking.findById(bookingId);
+    if (!booking) booking = await RentalBooking.findById(bookingId);
+    if (!booking) booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    booking.status = 'accepted';
+    booking.driverId = driverId;
+    booking.acceptedAt = new Date();
+    await booking.save();
+    
+    res.json({ success: true, message: 'Booking accepted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to accept booking' });
+  }
+});
+
+// POST /bookings/:bookingId/reject - Reject booking
+router.post('/:bookingId/reject', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    let booking = await AirportBooking.findById(bookingId);
+    if (!booking) booking = await RentalBooking.findById(bookingId);
+    if (!booking) booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    booking.status = 'cancelled';
+    await booking.save();
+    
+    res.json({ success: true, message: 'Booking rejected' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to reject booking' });
+  }
+});
+
+// POST /bookings/:bookingId/start - Start trip
+router.post('/:bookingId/start', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    let booking = await AirportBooking.findById(bookingId);
+    if (!booking) booking = await RentalBooking.findById(bookingId);
+    if (!booking) booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    booking.status = 'in_progress';
+    booking.startedAt = new Date();
+    await booking.save();
+    
+    res.json({ success: true, message: 'Trip started' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to start trip' });
+  }
+});
+
+// POST /bookings/:bookingId/complete - Complete trip
+router.post('/:bookingId/complete', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { endLocation, finalAmount } = req.body;
+    
+    let booking = await AirportBooking.findById(bookingId);
+    if (!booking) booking = await RentalBooking.findById(bookingId);
+    if (!booking) booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    booking.status = 'completed';
+    booking.completedAt = new Date();
+    if (finalAmount) booking.totalPrice = finalAmount;
+    await booking.save();
+    
+    res.json({ success: true, message: 'Trip completed' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to complete trip' });
   }
 });
 
