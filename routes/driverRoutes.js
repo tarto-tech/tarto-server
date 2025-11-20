@@ -92,6 +92,59 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
+// GET /drivers/phone/:phone - Check if driver exists
+router.get('/phone/:phone', async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ phone: req.params.phone });
+    if (driver) {
+      res.json({ success: true, data: driver });
+    } else {
+      res.json({ success: false, message: 'Driver not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /drivers/register - Register new driver
+router.post('/register', async (req, res) => {
+  try {
+    const { phone, name, email, vehicleDetails, documents } = req.body;
+    
+    // Check if driver already exists
+    let driver = await Driver.findOne({ phone });
+    if (driver) {
+      return res.status(400).json({ success: false, message: 'Driver already exists' });
+    }
+    
+    // Create new driver
+    driver = new Driver({
+      phone,
+      name,
+      email,
+      vehicleType: vehicleDetails?.type,
+      vehicleNumber: vehicleDetails?.number,
+      licenseNumber: documents?.license,
+      status: 'active'
+    });
+    
+    await driver.save();
+    
+    // Generate token
+    const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
+    
+    res.json({
+      success: true,
+      data: {
+        token,
+        driver
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /drivers/profile/:driverId - Get driver profile
 router.get('/profile/:driverId', async (req, res) => {
   try {
