@@ -79,11 +79,13 @@ router.post('/verify-otp', async (req, res) => {
           id: driver._id,
           name: driver.name,
           phone: driver.phone,
-          vehicle: {
-            type: driver.vehicleType,
-            number: driver.vehicleNumber
-          },
-          status: driver.status
+          email: driver.email,
+          vehicleDetails: driver.vehicleDetails,
+          documents: driver.documents,
+          status: driver.status,
+          rating: driver.rating,
+          totalTrips: driver.totalTrips,
+          totalEarnings: driver.totalEarnings
         }
       }
     });
@@ -122,10 +124,9 @@ router.post('/register', async (req, res) => {
       phone,
       name,
       email,
-      vehicleType: vehicleDetails?.type,
-      vehicleNumber: vehicleDetails?.number,
-      licenseNumber: documents?.license,
-      status: 'active'
+      vehicleDetails,
+      documents,
+      status: 'pending'
     });
     
     await driver.save();
@@ -158,11 +159,13 @@ router.get('/profile/:driverId', async (req, res) => {
       id: driver._id,
       name: driver.name,
       phone: driver.phone,
-      vehicle: {
-        type: driver.vehicleType,
-        number: driver.vehicleNumber
-      },
-      status: driver.status
+      email: driver.email,
+      vehicleDetails: driver.vehicleDetails,
+      documents: driver.documents,
+      status: driver.status,
+      rating: driver.rating,
+      totalTrips: driver.totalTrips,
+      totalEarnings: driver.totalEarnings
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
@@ -194,10 +197,10 @@ router.get('/:driverId/earnings', async (req, res) => {
     }
     
     res.json({
-      today: driver.earnings.today || 0,
-      thisWeek: driver.earnings.thisWeek || 0,
-      thisMonth: driver.earnings.thisMonth || 0,
-      total: driver.earnings.total || 0
+      today: 0,
+      thisWeek: 0,
+      thisMonth: 0,
+      total: driver.totalEarnings || 0
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch earnings' });

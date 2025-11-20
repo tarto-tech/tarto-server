@@ -1,21 +1,27 @@
 const mongoose = require('mongoose');
 
 const driverSchema = new mongoose.Schema({
-  name: { type: String, required: true },
   phone: { type: String, required: true, unique: true },
-  vehicleType: { type: String },
-  vehicleNumber: { type: String },
-  licenseNumber: { type: String },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-  location: {
-    latitude: { type: Number },
-    longitude: { type: Number }
+  name: { type: String, required: true },
+  email: { type: String },
+  vehicleDetails: {
+    type: { type: String, required: true },
+    registrationNumber: { type: String, required: true }
   },
-  earnings: {
-    today: { type: Number, default: 0 },
-    thisWeek: { type: Number, default: 0 },
-    thisMonth: { type: Number, default: 0 },
-    total: { type: Number, default: 0 }
+  documents: {
+    licenseNumber: { type: String, required: true }
+  },
+  status: { 
+    type: String, 
+    default: 'pending', 
+    enum: ['pending', 'approved', 'active', 'inactive', 'rejected'] 
+  },
+  rating: { type: Number, default: 0 },
+  totalTrips: { type: Number, default: 0 },
+  totalEarnings: { type: Number, default: 0 },
+  location: {
+    latitude: Number,
+    longitude: Number
   }
 }, { timestamps: true });
 
