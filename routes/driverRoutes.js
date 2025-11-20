@@ -98,10 +98,11 @@ router.post('/verify-otp', async (req, res) => {
 router.get('/phone/:phone', async (req, res) => {
   try {
     const driver = await Driver.findOne({ phone: req.params.phone });
+    
     if (driver) {
       res.json({ success: true, data: driver });
     } else {
-      res.json({ success: false, message: 'Driver not found' });
+      res.json({ success: false, message: 'Driver not found', data: null });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
