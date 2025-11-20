@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Driver = require('../models/Driver');
+const DriverOTP = require('../models/DriverOTP');
 const Booking = require('../models/BookingModel');
 const AirportBooking = require('../models/AirportBookingNew');
 const RentalBooking = require('../models/RentalBooking');
 
-// Store OTPs temporarily (use Redis in production)
-const otpStore = new Map();
-
-// POST /drivers/login - Send OTP
+// POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
   try {
     const { phone } = req.body;
@@ -20,15 +18,21 @@ router.post('/login', async (req, res) => {
     // Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     
-    // Store OTP (expires in 5 minutes)
-    otpStore.set(phone, { otp, expires: Date.now() + 300000 });
+    // Delete any existing OTP for this phone
+    await DriverOTP.deleteMany({ phone });
     
-    // TODO: Send OTP via SMS service
+    // Store OTP in database (expires in 10 minutes)
+    await DriverOTP.create({
+      phone,
+      otp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+    });
+    
     console.log(`OTP for ${phone}: ${otp}`);
     
-    res.json({ success: true, message: 'OTP sent successfully' });
+    res.json({ success: true, message: 'OTP generated' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    res.status(500).json({ success: false, message: 'Failed to generate OTP' });
   }
 });
 
@@ -41,14 +45,16 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and OTP required' });
     }
     
-    const storedData = otpStore.get(phone);
+    // Find OTP in database
+    const otpRecord = await DriverOTP.findOne({ phone, otp });
     
-    if (!storedData || storedData.expires < Date.now()) {
-      return res.status(400).json({ success: false, message: 'OTP expired' });
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
     
-    if (storedData.otp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    if (otpRecord.expiresAt < new Date()) {
+      await DriverOTP.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ success: false, message: 'OTP expired' });
     }
     
     // Find or create driver
@@ -59,25 +65,27 @@ router.post('/verify-otp', async (req, res) => {
       await driver.save();
     }
     
-    // Clear OTP
-    otpStore.delete(phone);
+    // Delete used OTP
+    await DriverOTP.deleteOne({ _id: otpRecord._id });
     
-    // Generate token (simplified - use JWT in production)
+    // Generate token
     const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
     
     res.json({ 
       success: true, 
-      driver: {
-        id: driver._id,
-        name: driver.name,
-        phone: driver.phone,
-        vehicle: {
-          type: driver.vehicleType,
-          number: driver.vehicleNumber
-        },
-        status: driver.status
-      },
-      token 
+      data: {
+        token,
+        driver: {
+          id: driver._id,
+          name: driver.name,
+          phone: driver.phone,
+          vehicle: {
+            type: driver.vehicleType,
+            number: driver.vehicleNumber
+          },
+          status: driver.status
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to verify OTP' });
