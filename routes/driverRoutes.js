@@ -247,6 +247,26 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// POST /drivers/:driverId/status - Update driver status (alternative endpoint)
+router.post('/:driverId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.driverId,
+      { status },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: { driver } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update status' });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {

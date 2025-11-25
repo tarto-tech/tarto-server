@@ -14,7 +14,7 @@ const driverSchema = new mongoose.Schema({
   status: { 
     type: String, 
     default: 'pending', 
-    enum: ['pending', 'approved', 'active', 'inactive', 'rejected'] 
+    enum: ['pending', 'approved', 'active', 'inactive', 'busy', 'rejected'] 
   },
   rating: { type: Number, default: 0 },
   totalTrips: { type: Number, default: 0 },

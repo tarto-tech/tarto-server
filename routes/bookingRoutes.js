@@ -427,6 +427,7 @@ router.post('/:bookingId/accept', async (req, res) => {
 router.post('/:bookingId/reject', async (req, res) => {
   try {
     const { bookingId } = req.params;
+    const { driverId } = req.body;
     
     let booking = await AirportBooking.findById(bookingId);
     if (!booking) booking = await RentalBooking.findById(bookingId);
@@ -436,7 +437,10 @@ router.post('/:bookingId/reject', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
     
-    booking.status = 'cancelled';
+    if (!booking.rejectedDrivers) booking.rejectedDrivers = [];
+    if (driverId && !booking.rejectedDrivers.includes(driverId)) {
+      booking.rejectedDrivers.push(driverId);
+    }
     await booking.save();
     
     res.json({ success: true, message: 'Booking rejected' });

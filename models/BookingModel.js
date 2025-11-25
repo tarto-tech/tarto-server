@@ -70,9 +70,11 @@ const bookingSchema = new mongoose.Schema({
   payment: paymentSchema,
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'],
+    enum: ['pending', 'accepted', 'confirmed', 'in_progress', 'started', 'completed', 'cancelled'],
     default: 'pending'
   },
+  acceptedAt: Date,
+  rejectedDrivers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Driver' }],
   // Add this field to your schema
   type: {
     type: String,
