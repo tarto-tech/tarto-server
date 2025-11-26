@@ -267,6 +267,19 @@ router.post('/:driverId/status', async (req, res) => {
   }
 });
 
+// GET /drivers/:driverId - Get driver by ID
+router.get('/:driverId', async (req, res) => {
+  try {
+    const driver = await Driver.findById(req.params.driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {
