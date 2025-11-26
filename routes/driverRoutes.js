@@ -173,6 +173,32 @@ router.get('/profile/:driverId', async (req, res) => {
   }
 });
 
+// POST /drivers/:driverId/update - Update driver profile
+router.post('/:driverId/update', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { name, email, vehicleDetails } = req.body;
+
+    const driver = await Driver.findById(driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+
+    // Update fields
+    if (name) driver.name = name;
+    if (email) driver.email = email;
+    if (vehicleDetails?.registrationNumber) {
+      driver.vehicleDetails.registrationNumber = vehicleDetails.registrationNumber;
+    }
+
+    await driver.save();
+
+    res.json({ success: true, data: { driver } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /drivers/:driverId/location - Update driver location
 router.post('/:driverId/location', async (req, res) => {
   try {
