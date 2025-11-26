@@ -199,6 +199,26 @@ router.post('/:driverId/update', async (req, res) => {
   }
 });
 
+// POST /drivers/:driverId/work-locations - Update driver work locations
+router.post('/:driverId/work-locations', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { workLocations } = req.body;
+
+    const driver = await Driver.findById(driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+
+    driver.workLocations = workLocations;
+    await driver.save();
+
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /drivers/:driverId/location - Update driver location
 router.post('/:driverId/location', async (req, res) => {
   try {
