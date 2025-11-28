@@ -371,6 +371,72 @@ curl -X POST https://tarto-server-pog2.onrender.com/api/drivers/69206989915f8c7f
 
 ---
 
+### 14. Update Driver Work Locations ✅
+```
+PUT /api/drivers/:driverId/work-locations
+```
+**Body:**
+```json
+{
+  "workLocations": [
+    {
+      "name": "Bangalore",
+      "city": "Bangalore",
+      "lat": "12.9716",
+      "lng": "77.5946"
+    },
+    {
+      "name": "Mysore",
+      "city": "Mysore",
+      "lat": "12.2958",
+      "lng": "76.6394"
+    }
+  ]
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "69206989915f8c7f1b69e15e",
+    "name": "Driver Name",
+    "workLocations": [...]
+  }
+}
+```
+
+---
+
+### 15. Get Nearby Bookings ✅
+```
+GET /api/bookings/nearby/:driverId?lat=12.9716&lng=77.5946&radius=30
+```
+**Query Parameters:**
+- `lat` (optional): Latitude
+- `lng` (optional): Longitude
+- `radius` (optional): Radius in km (default: 30)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "bookings": [
+      {
+        "_id": "691de670499689f451e5bbc4",
+        "source": {...},
+        "destination": {...},
+        "status": "pending",
+        "totalPrice": 1200
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## 📝 Notes
 
 - All endpoints return JSON responses
@@ -378,3 +444,4 @@ curl -X POST https://tarto-server-pog2.onrender.com/api/drivers/69206989915f8c7f
 - Success responses follow format: `{ "success": true, "data": {...} }`
 - Booking status flow: `pending` → `accepted` → `in_progress` → `completed`
 - Driver must be `active` to receive bookings
+- Nearby bookings use Haversine formula for distance calculation

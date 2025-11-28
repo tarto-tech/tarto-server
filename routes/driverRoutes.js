@@ -326,6 +326,28 @@ router.get('/:driverId', async (req, res) => {
   }
 });
 
+// PUT /drivers/:driverId/work-locations - Update work locations
+router.put('/:driverId/work-locations', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { workLocations } = req.body;
+
+    const driver = await Driver.findByIdAndUpdate(
+      driverId,
+      { workLocations },
+      { new: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({ success: false, error: 'Driver not found' });
+    }
+
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {

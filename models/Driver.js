@@ -24,8 +24,10 @@ const driverSchema = new mongoose.Schema({
     longitude: Number
   },
   workLocations: [{
-    name: { type: String, required: true },
-    city: { type: String, required: true }
+    name: String,
+    city: String,
+    lat: String,
+    lng: String
   }]
 }, { timestamps: true });
 

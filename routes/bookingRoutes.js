@@ -115,6 +115,65 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /bookings/nearby/:driverId - Get nearby bookings with location filter
+router.get('/nearby/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { lat, lng, radius = 30 } = req.query;
+
+    let query = { status: { $in: ['pending', 'confirmed'] } };
+
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      const radiusInKm = parseFloat(radius);
+
+      const bookings = await Booking.find(query)
+        .populate('userId', 'name phone email')
+        .populate('vehicleId', 'title type capacity');
+      
+      const nearbyBookings = bookings.filter(booking => {
+        if (!booking.source?.location?.coordinates) return false;
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          booking.source.location.coordinates[1],
+          booking.source.location.coordinates[0]
+        );
+        return distance <= radiusInKm;
+      });
+
+      return res.json({ success: true, data: { bookings: nearbyBookings } });
+    }
+
+    const bookings = await Booking.find(query)
+      .populate('userId', 'name phone email')
+      .populate('vehicleId', 'title type capacity')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: { bookings } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRadians(degrees) {
+  return degrees * Math.PI / 180;
+}
+
 // GET /bookings/driver/:driverId - Get all bookings for driver
 router.get('/driver/:driverId', async (req, res) => {
   try {
