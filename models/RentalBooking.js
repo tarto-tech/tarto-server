@@ -19,20 +19,22 @@ const rentalBookingSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'], 
+    enum: ['pending', 'accepted', 'ongoing', 'completed', 'cancelled'], 
     default: 'pending' 
   },
   paymentStatus: { 
     type: String, 
-    enum: ['pending', 'advance_required', 'advance_paid', 'completed'], 
+    enum: ['pending', 'paid', 'failed'], 
     default: 'pending' 
   },
   driverId: { type: String, default: null },
   acceptedAt: { type: Date, default: null },
   advancePaidAt: { type: Date, default: null },
   completedAt: { type: Date, default: null },
+  basePrice: { type: Number, required: true },
+  totalPrice: { type: Number, required: true },
   advanceAmount: { type: Number, default: 0 },
-  totalAmount: { type: Number, default: 0 },
+  advancePaid: { type: Boolean, default: false },
   paymentDetails: {
     advancePaymentId: String,
     finalPaymentId: String,

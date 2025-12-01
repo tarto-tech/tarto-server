@@ -6,6 +6,100 @@ const User = require('../models/userModel');
 const AirportBooking = require('../models/AirportBookingNew');
 const RentalBooking = require('../models/RentalBooking');
 
+// POST /rental-bookings - Create rental booking
+router.post('/rental-bookings', async (req, res) => {
+  try {
+    const { userId, userName, userPhone, vehicleId, vehicleType, vehicleTitle, rentalDays, kmLimit, scheduledDate, scheduledTime, pickupLocation, totalPrice, basePrice } = req.body;
+
+    if (!userId || !vehicleId || !rentalDays || !basePrice) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    if (rentalDays <= 0) {
+      return res.status(400).json({ success: false, message: 'Rental days must be positive' });
+    }
+
+    const calculatedPrice = basePrice * rentalDays;
+    if (totalPrice !== calculatedPrice) {
+      return res.status(400).json({ success: false, message: 'Invalid price calculation' });
+    }
+
+    const rentalBooking = new RentalBooking({ userId, userName, userPhone, type: 'rental', vehicleId, vehicleType, vehicleTitle, rentalDays, kmLimit, scheduledDate, scheduledTime, pickupLocation, totalPrice, basePrice, status: 'pending', paymentStatus: 'pending' });
+    const saved = await rentalBooking.save();
+
+    res.status(201).json({ success: true, message: 'Rental booking created successfully', data: saved });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /rental-bookings/user/:userId - Get user rental bookings
+router.get('/rental-bookings/user/:userId', async (req, res) => {
+  try {
+    const bookings = await RentalBooking.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /rental-bookings/:bookingId - Update rental booking
+router.put('/rental-bookings/:bookingId', async (req, res) => {
+  try {
+    const { rentalDays, scheduledDate, scheduledTime, pickupLocation } = req.body;
+    const updateData = {};
+    
+    if (rentalDays) {
+      const booking = await RentalBooking.findById(req.params.bookingId);
+      if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+      updateData.rentalDays = rentalDays;
+      updateData.totalPrice = booking.basePrice * rentalDays;
+    }
+    if (scheduledDate) updateData.scheduledDate = scheduledDate;
+    if (scheduledTime) updateData.scheduledTime = scheduledTime;
+    if (pickupLocation) updateData.pickupLocation = pickupLocation;
+
+    const updated = await RentalBooking.findByIdAndUpdate(req.params.bookingId, updateData, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    res.json({ success: true, message: 'Booking updated successfully', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /rental-bookings/:bookingId - Cancel rental booking
+router.delete('/rental-bookings/:bookingId', async (req, res) => {
+  try {
+    const updated = await RentalBooking.findByIdAndUpdate(req.params.bookingId, { status: 'cancelled' }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Booking not found' });
+    res.json({ success: true, message: 'Rental booking cancelled successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /rental-bookings/:bookingId/pay-advance - Pay advance
+router.post('/rental-bookings/:bookingId/pay-advance', async (req, res) => {
+  try {
+    const { amount, paymentId, paymentMethod } = req.body;
+    const booking = await RentalBooking.findById(req.params.bookingId);
+    
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (booking.status !== 'accepted') return res.status(400).json({ success: false, message: 'Booking must be accepted first' });
+
+    booking.advanceAmount = amount;
+    booking.advancePaid = true;
+    booking.paymentStatus = 'paid';
+    booking.paymentDetails = { advancePaymentId: paymentId, paymentMethod, paidAt: new Date() };
+    await booking.save();
+
+    res.json({ success: true, message: 'Advance payment successful' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Get all bookings (for admin panel)
 // IMPORTANT: This route must come BEFORE the /:id route
 router.get('/', async (req, res) => {
