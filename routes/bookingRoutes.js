@@ -142,13 +142,20 @@ router.post('/', async (req, res) => {
       distance,
       duration,
       basePrice,
+      serviceCharge,
+      driverAmount,
       totalPrice,
       type,
       payment,
       additionalCharges,
       pickupDate,
       pickupTime,
-      returnDate
+      returnDate,
+      status,
+      paymentStatus,
+      userName,
+      userPhone,
+      vehicleName
     } = req.body;
 
     // Validate required fields
@@ -169,6 +176,8 @@ router.post('/', async (req, res) => {
       distance,
       duration,
       basePrice: basePrice || totalPrice,
+      serviceCharge: serviceCharge || 0,
+      driverAmount: driverAmount || basePrice,
       additionalCharges: additionalCharges || {
         driverAllowance: 0,
         parkingCharges: 0,
@@ -181,23 +190,20 @@ router.post('/', async (req, res) => {
       returnDate,
       payment: payment || {
         method: 'cash',
-        status: 'pending',
+        status: paymentStatus || 'pending',
         amount: totalPrice
       },
-      status: 'pending'
+      status: status || 'pending'
     });
 
     // Save booking
     const savedBooking = await booking.save();
 
-    // Update vehicle availability (commented out for testing)
-    // await Vehicle.findByIdAndUpdate(vehicleId, { isAvailable: false });
-
     res.status(201).json({
       success: true,
       message: 'Booking created successfully',
       data: savedBooking,
-       bookingId: savedBooking._id 
+      bookingId: savedBooking._id
     });
   } catch (error) {
     console.error('Error creating booking:', error);

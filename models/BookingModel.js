@@ -61,6 +61,8 @@ const bookingSchema = new mongoose.Schema({
   distance: { type: Number, required: true }, // in km
   duration: { type: Number, required: true }, // in minutes
   basePrice: { type: Number, required: true },
+  serviceCharge: { type: Number, default: 0 },
+  driverAmount: { type: Number, default: 0 },
   additionalCharges: {
     driverAllowance: { type: Number, default: 0 },
     parkingCharges: { type: Number, default: 0 },
