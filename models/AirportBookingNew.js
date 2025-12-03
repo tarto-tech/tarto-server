@@ -11,6 +11,7 @@ const airportBookingSchema = new mongoose.Schema({
   vehicleId: { type: String, required: true },
   vehicleType: { type: String, required: true },
   totalPrice: { type: Number, required: true },
+  driverAmount: { type: Number, default: 0 },
   distance: { type: Number, required: true },
   scheduledDate: { type: String, required: true },
   scheduledTime: { type: String, required: true },

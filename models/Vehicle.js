@@ -58,6 +58,10 @@ const vehicleSchema = new mongoose.Schema({
   driverBata: {
     type: Number,
     default: 0
+  },
+  dailyKilometer: {
+    type: Number,
+    default: 280
   }
 }, { timestamps: true });
 

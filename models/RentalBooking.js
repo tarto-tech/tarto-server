@@ -33,6 +33,7 @@ const rentalBookingSchema = new mongoose.Schema({
   completedAt: { type: Date, default: null },
   basePrice: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
+  driverAmount: { type: Number, default: 0 },
   advanceAmount: { type: Number, default: 0 },
   advancePaid: { type: Boolean, default: false },
   paymentDetails: {

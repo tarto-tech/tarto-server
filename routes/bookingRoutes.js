@@ -281,6 +281,7 @@ router.get('/driver/:driverId', async (req, res) => {
     
     const airportBookings = await AirportBooking.find({ driverId }).sort({ createdAt: -1 });
     const rentalBookings = await RentalBooking.find({ driverId }).sort({ createdAt: -1 });
+    const regularBookings = await Booking.find({ driverId }).sort({ createdAt: -1 });
     
     const bookings = [
       ...airportBookings.map(b => ({
@@ -291,7 +292,7 @@ router.get('/driver/:driverId', async (req, res) => {
         date: b.scheduledDate,
         time: b.scheduledTime,
         status: b.status,
-        amount: b.totalPrice,
+        amount: b.driverAmount || b.totalPrice,
         customer: { name: b.userName, phone: b.userPhone }
       })),
       ...rentalBookings.map(b => ({
@@ -302,8 +303,19 @@ router.get('/driver/:driverId', async (req, res) => {
         date: b.scheduledDate,
         time: b.scheduledTime,
         status: b.status,
-        amount: b.totalAmount,
+        amount: b.driverAmount || b.totalPrice,
         customer: { name: b.userName, phone: b.userPhone }
+      })),
+      ...regularBookings.map(b => ({
+        id: b._id,
+        type: b.type,
+        pickup: b.source?.name || b.source?.address,
+        drop: b.destination?.name || b.destination?.address,
+        date: b.pickupDate,
+        time: b.pickupTime,
+        status: b.status,
+        amount: b.driverAmount || b.totalPrice,
+        customer: { name: 'Customer', phone: '' }
       }))
     ];
     
