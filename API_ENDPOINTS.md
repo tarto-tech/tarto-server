@@ -368,6 +368,8 @@ curl -X POST https://tarto-server-pog2.onrender.com/api/drivers/69206989915f8c7f
 | Get Driver Profile | ✅ Implemented | High |
 | Get Earnings | ✅ Implemented | Medium |
 | Get Trip History | ✅ Implemented | Medium |
+| Create Outstation Booking | ✅ Implemented | CRITICAL |
+| Update Outstation Booking | ✅ Implemented | High |
 
 ---
 
@@ -408,7 +410,80 @@ PUT /api/drivers/:driverId/work-locations
 
 ---
 
-### 15. Get Nearby Bookings ✅
+### 15. Create Outstation Booking (One-Way/Round Trip) ✅
+```
+POST /api/bookings/outstation
+```
+**Body (One-Way):**
+```json
+{
+  "userId": "123",
+  "userName": "John Doe",
+  "userPhone": "9876543210",
+  "source": {
+    "name": "Bangalore",
+    "address": "MG Road",
+    "latitude": 12.9716,
+    "longitude": 77.5946
+  },
+  "destination": {
+    "name": "Mysore",
+    "address": "Palace Road",
+    "latitude": 12.2958,
+    "longitude": 76.6394
+  },
+  "vehicleId": "abc123",
+  "vehicleName": "Sedan",
+  "distance": 150,
+  "duration": 180,
+  "totalPrice": 3000,
+  "pickupDate": "2024-01-15T00:00:00Z",
+  "pickupTime": "10:00",
+  "returnDate": null,
+  "isRoundTrip": false,
+  "isOutstationRide": true
+}
+```
+
+**Body (Round Trip):**
+```json
+{
+  "userId": "123",
+  "isRoundTrip": true,
+  "pickupDate": "2024-01-15T00:00:00Z",
+  "returnDate": "2024-01-17T00:00:00Z",
+  "totalPrice": 6000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "bookingId": "691de670499689f451e5bbc4",
+  "message": "Booking created successfully",
+  "booking": {...}
+}
+```
+
+---
+
+### 16. Update Outstation Booking ✅
+```
+PUT /api/bookings/outstation/:bookingId
+```
+**Body:**
+```json
+{
+  "isRoundTrip": true,
+  "returnDate": "2024-01-18T00:00:00Z",
+  "totalPrice": 7000
+}
+```
+
+---
+
+### 17. Get Nearby Bookings ✅
 ```
 GET /api/bookings/nearby/:driverId?lat=12.9716&lng=77.5946&radius=30
 ```

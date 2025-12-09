@@ -130,6 +130,86 @@ router.get('/', async (req, res) => {
   }
 });
 
+// POST /bookings/outstation - Create outstation booking (one-way or round trip)
+router.post('/outstation', async (req, res) => {
+  try {
+    const {
+      userId, userName, userPhone, source, destination, stops, vehicleId, vehicleName,
+      distance, duration, totalPrice, pickupDate, pickupTime, returnDate,
+      isRoundTrip, isOutstationRide
+    } = req.body;
+
+    if (!userId || !source || !destination || !vehicleId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    if (isRoundTrip && !returnDate) {
+      return res.status(400).json({ success: false, message: 'Return date required for round trip' });
+    }
+
+    if (isRoundTrip && returnDate && new Date(returnDate) < new Date(pickupDate)) {
+      return res.status(400).json({ success: false, message: 'Return date must be after pickup date' });
+    }
+
+    const booking = new Booking({
+      userId, userName, userPhone, vehicleId, vehicleName,
+      source, destination, stops: stops || [],
+      distance, duration, totalPrice,
+      basePrice: totalPrice,
+      pickupDate, pickupTime,
+      returnDate: isRoundTrip ? returnDate : null,
+      isRoundTrip: isRoundTrip || false,
+      isOutstationRide: isOutstationRide || true,
+      type: 'outstation',
+      status: 'pending'
+    });
+
+    const savedBooking = await booking.save();
+
+    res.status(201).json({
+      success: true,
+      bookingId: savedBooking._id,
+      message: 'Booking created successfully',
+      booking: savedBooking
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /bookings/outstation/:bookingId - Update outstation booking
+router.put('/outstation/:bookingId', async (req, res) => {
+  try {
+    const { isRoundTrip, returnDate, pickupDate, pickupTime, totalPrice } = req.body;
+    
+    const booking = await Booking.findById(req.params.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (isRoundTrip !== undefined && isRoundTrip && !returnDate) {
+      return res.status(400).json({ success: false, message: 'Return date required for round trip' });
+    }
+
+    if (isRoundTrip !== undefined) booking.isRoundTrip = isRoundTrip;
+    if (returnDate !== undefined) booking.returnDate = isRoundTrip ? returnDate : null;
+    if (pickupDate) booking.pickupDate = pickupDate;
+    if (pickupTime) booking.pickupTime = pickupTime;
+    if (totalPrice) booking.totalPrice = totalPrice;
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      bookingId: booking._id,
+      message: 'Booking updated successfully',
+      booking
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Create a new booking
 router.post('/', async (req, res) => {
   try {
@@ -155,7 +235,9 @@ router.post('/', async (req, res) => {
       paymentStatus,
       userName,
       userPhone,
-      vehicleName
+      vehicleName,
+      isRoundTrip,
+      isOutstationRide
     } = req.body;
 
     // Validate required fields
@@ -188,6 +270,11 @@ router.post('/', async (req, res) => {
       pickupDate,
       pickupTime,
       returnDate,
+      userName,
+      userPhone,
+      vehicleName,
+      isRoundTrip: isRoundTrip || false,
+      isOutstationRide: isOutstationRide || false,
       payment: payment || {
         method: 'cash',
         status: paymentStatus || 'pending',

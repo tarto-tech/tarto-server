@@ -94,6 +94,11 @@ const bookingSchema = new mongoose.Schema({
   returnDate: {
     type: Date,
   },
+  isRoundTrip: { type: Boolean, default: false },
+  isOutstationRide: { type: Boolean, default: false },
+  userName: String,
+  userPhone: String,
+  vehicleName: String,
   cancellationReason: String,
   cancelledAt: Date,
   startedAt: Date,
@@ -109,12 +114,14 @@ bookingSchema.pre('save', function(next) {
 });
 
 
-// Update total price when additional charges change
+// Validation: returnDate required for round trips
 bookingSchema.pre('save', function(next) {
-  this.totalPrice = this.basePrice + 
-    this.additionalCharges.driverAllowance +
-    this.additionalCharges.parkingCharges +
-    this.additionalCharges.waitingCharges;
+  if (this.isRoundTrip && !this.returnDate) {
+    return next(new Error('Return date is required for round trip bookings'));
+  }
+  if (this.isRoundTrip && this.returnDate && this.pickupDate && this.returnDate < this.pickupDate) {
+    return next(new Error('Return date must be after pickup date'));
+  }
   next();
 });
 
