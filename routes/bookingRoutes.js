@@ -151,11 +151,17 @@ router.post('/outstation', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Return date must be after pickup date' });
     }
 
+    // Calculate service charge and driver amount
+    const serviceCharge = Math.round(distance * 1);
+    const driverAmount = Math.round(totalPrice - serviceCharge);
+
     const booking = new Booking({
       userId, userName, userPhone, vehicleId, vehicleName,
       source, destination, stops: stops || [],
       distance, duration, totalPrice,
       basePrice: totalPrice,
+      serviceCharge,
+      driverAmount,
       pickupDate, pickupTime,
       returnDate: isRoundTrip ? returnDate : null,
       isRoundTrip: isRoundTrip || false,
@@ -222,8 +228,6 @@ router.post('/', async (req, res) => {
       distance,
       duration,
       basePrice,
-      serviceCharge,
-      driverAmount,
       totalPrice,
       type,
       payment,
@@ -248,6 +252,10 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Calculate service charge and driver amount
+    const serviceCharge = Math.round(distance * 1);
+    const driverAmount = Math.round((basePrice || totalPrice) - serviceCharge);
+
     // Create booking
     const booking = new Booking({
       userId,
@@ -258,8 +266,8 @@ router.post('/', async (req, res) => {
       distance,
       duration,
       basePrice: basePrice || totalPrice,
-      serviceCharge: serviceCharge || 0,
-      driverAmount: driverAmount || basePrice,
+      serviceCharge,
+      driverAmount,
       additionalCharges: additionalCharges || {
         driverAllowance: 0,
         parkingCharges: 0,
