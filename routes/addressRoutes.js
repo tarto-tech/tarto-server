@@ -2,10 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/userModel');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Get all saved addresses for a user
-router.get('/:userId/addresses', auth, async (req, res) => {
+router.get('/:userId/addresses', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.userId;
     
@@ -36,7 +36,7 @@ router.get('/:userId/addresses', auth, async (req, res) => {
 });
 
 // Add a new address
-router.post('/:userId/addresses', auth, async (req, res) => {
+router.post('/:userId/addresses', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.userId;
     const addressData = req.body;
@@ -81,7 +81,7 @@ router.post('/:userId/addresses', auth, async (req, res) => {
 });
 
 // Update an address
-router.put('/:userId/addresses/:addressId', auth, async (req, res) => {
+router.put('/:userId/addresses/:addressId', authenticateToken, async (req, res) => {
   try {
     const { userId, addressId } = req.params;
     const addressData = req.body;
@@ -126,7 +126,7 @@ router.put('/:userId/addresses/:addressId', auth, async (req, res) => {
 });
 
 // Delete an address
-router.delete('/:userId/addresses/:addressId', auth, async (req, res) => {
+router.delete('/:userId/addresses/:addressId', authenticateToken, async (req, res) => {
   try {
     const { userId, addressId } = req.params;
     
