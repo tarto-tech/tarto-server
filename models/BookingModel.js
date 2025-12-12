@@ -99,6 +99,14 @@ const bookingSchema = new mongoose.Schema({
   userName: String,
   userPhone: String,
   vehicleName: String,
+  fareBreakdown: {
+    baseFare: Number,
+    driverAllowance: { type: Number, default: 0 },
+    tollCharges: { type: Number, default: 0 },
+    taxes: Number
+  },
+  calculationValidated: { type: Boolean, default: false },
+  serverCalculatedAt: { type: Date, default: Date.now },
   cancellationReason: String,
   cancelledAt: Date,
   startedAt: Date,

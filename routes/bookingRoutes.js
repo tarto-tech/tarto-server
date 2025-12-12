@@ -5,6 +5,8 @@ const Booking = require('../models/BookingModel');
 const User = require('../models/userModel');
 const AirportBooking = require('../models/AirportBookingNew');
 const RentalBooking = require('../models/RentalBooking');
+const { calculateDistanceAndDuration } = require('../services/googleMapsService');
+const { calculateSecureFare } = require('../services/pricingService');
 
 // POST /rental-bookings - Create rental booking
 router.post('/rental-bookings', async (req, res) => {
@@ -100,6 +102,38 @@ router.post('/rental-bookings/:bookingId/pay-advance', async (req, res) => {
   }
 });
 
+// POST /bookings/calculate-route - Secure route calculation
+router.post('/calculate-route', async (req, res) => {
+  try {
+    const { source, stops, isRoundTrip, vehicleType = 'sedan' } = req.body;
+    
+    if (!source || !stops || stops.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Source and destination stops are required' 
+      });
+    }
+    
+    const { distance, duration } = await calculateDistanceAndDuration(source, stops);
+    const fareDetails = calculateSecureFare(distance, vehicleType, isRoundTrip);
+    
+    res.json({
+      success: true,
+      data: {
+        distance,
+        duration: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+        ...fareDetails
+      }
+    });
+  } catch (error) {
+    console.error('Route calculation error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to calculate route' 
+    });
+  }
+});
+
 // Get all bookings (for admin panel)
 // IMPORTANT: This route must come BEFORE the /:id route
 router.get('/', async (req, res) => {
@@ -130,16 +164,16 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /bookings/outstation - Create outstation booking (one-way or round trip)
+// POST /bookings/outstation - Secure outstation booking with server-side validation
 router.post('/outstation', async (req, res) => {
   try {
     const {
-      userId, userName, userPhone, source, destination, stops, vehicleId, vehicleName,
-      distance, duration, totalPrice, pickupDate, pickupTime, returnDate,
-      isRoundTrip, isOutstationRide
+      userId, userName, userPhone, source, stops, vehicleId, vehicleName,
+      pickupDate, pickupTime, returnDate, isRoundTrip, vehicleType,
+      clientCalculatedFare
     } = req.body;
 
-    if (!userId || !source || !destination || !vehicleId) {
+    if (!userId || !source || !stops || stops.length === 0 || !vehicleId) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
@@ -151,35 +185,106 @@ router.post('/outstation', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Return date must be after pickup date' });
     }
 
-    // Calculate service charge and driver amount
+    // SERVER-SIDE RECALCULATION
+    const { distance, duration } = await calculateDistanceAndDuration(source, stops);
+    const serverFareDetails = calculateSecureFare(distance, vehicleType || 'sedan', isRoundTrip);
+
+    // FRAUD DETECTION
+    if (clientCalculatedFare && Math.abs(serverFareDetails.totalFare - clientCalculatedFare) > serverFareDetails.totalFare * 0.1) {
+      console.warn(`Fare manipulation detected: Client=${clientCalculatedFare}, Server=${serverFareDetails.totalFare}`);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Price validation failed. Please refresh and try again.' 
+      });
+    }
+
     const serviceCharge = Math.round(distance * 1);
-    const driverAmount = Math.round(totalPrice - serviceCharge);
+    const driverAmount = Math.round(serverFareDetails.totalFare - serviceCharge);
 
     const booking = new Booking({
       userId, userName, userPhone, vehicleId, vehicleName,
-      source, destination, stops: stops || [],
-      distance, duration, totalPrice,
-      basePrice: totalPrice,
+      source,
+      destination: stops[stops.length - 1],
+      stops,
+      distance,
+      duration: `${Math.floor(duration / 60)}h ${duration % 60}m`,
+      totalPrice: serverFareDetails.totalFare,
+      basePrice: serverFareDetails.baseFare,
       serviceCharge,
       driverAmount,
+      fareBreakdown: {
+        baseFare: serverFareDetails.baseFare,
+        driverAllowance: serverFareDetails.driverAllowance,
+        tollCharges: serverFareDetails.tollCharges,
+        taxes: serverFareDetails.taxes
+      },
       pickupDate, pickupTime,
       returnDate: isRoundTrip ? returnDate : null,
       isRoundTrip: isRoundTrip || false,
-      isOutstationRide: isOutstationRide || true,
+      isOutstationRide: true,
       type: 'outstation',
-      status: 'pending'
+      status: 'pending',
+      calculationValidated: true,
+      serverCalculatedAt: new Date()
     });
+
+    const savedBooking = await booking.save();
+    res.status(201).json({
+      success: true,
+      message: 'Outstation booking created successfully',
+      data: savedBooking
+    });
+  } catch (error) {
+    console.error('Outstation booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create booking'
+    });
+  }
+});
+
+// GET /bookings/user/:userId - Get user bookings
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.params.userId })
+      .sort({ createdAt: -1 })
+      .populate('vehicleId', 'title type imageUrl');
+    
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /bookings/:id/status - Update booking status
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { status, driverId } = req.body;
+    const updateData = { status };
+    if (driverId) updateData.driverId = driverId;
+    
+    const booking = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    
+    res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;  });
 
     const savedBooking = await booking.save();
 
     res.status(201).json({
       success: true,
       bookingId: savedBooking._id,
-      message: 'Booking created successfully',
+      message: 'Outstation booking created successfully',
       booking: savedBooking
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Outstation booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create booking' });
   }
 });
 

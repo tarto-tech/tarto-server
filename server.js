@@ -17,11 +17,35 @@ mongoose.connection.once('open', () => {
 });
 
 const app = express();
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
-// Middleware
-app.use(cors());
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || '*'
+    : '*',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
+
+// Rate limiting
+const routeCalculationLimit = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many route calculations, try again later' }
+});
+
+const bookingLimit = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many booking attempts, try again later' }
+});
+
+app.set('routeCalculationLimit', routeCalculationLimit);
+app.set('bookingLimit', bookingLimit);
 
 // Import routes
 const userRoutes = require('./routes/userRoutes');
