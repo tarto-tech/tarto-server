@@ -388,7 +388,7 @@ router.get('/driver/:driverId', async (req, res) => {
         time: b.scheduledTime,
         status: b.status,
         amount: b.driverAmount || b.totalPrice,
-        customer: { name: b.userName, phone: b.userPhone }
+        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
       })),
       ...rentalBookings.map(b => ({
         id: b._id,
@@ -399,7 +399,7 @@ router.get('/driver/:driverId', async (req, res) => {
         time: b.scheduledTime,
         status: b.status,
         amount: b.driverAmount || b.totalPrice,
-        customer: { name: b.userName, phone: b.userPhone }
+        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
       })),
       ...regularBookings.map(b => ({
         id: b._id,
@@ -410,7 +410,7 @@ router.get('/driver/:driverId', async (req, res) => {
         time: b.pickupTime,
         status: b.status,
         amount: b.driverAmount || b.totalPrice,
-        customer: { name: 'Customer', phone: '' }
+        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
       }))
     ];
     
