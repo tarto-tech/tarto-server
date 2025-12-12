@@ -12,11 +12,12 @@ const { authenticateToken, requireAdmin, verifyOwnership, verifyUserAccess } = r
 const { otpLimiter } = require('../middleware/rateLimiter');
 const { sanitizeInput } = require('../middleware/sanitize');
 const { enforceHTTPS, requestSizeLimiter, bookingLimiter } = require('../middleware/security');
+const { encrypt } = require('../utils/encryption');
+const { sanitizeQuery, validateObjectId } = require('../utils/validation');
 
-// Apply input sanitization to all routes
 router.use(sanitizeInput);
 
-// POST /rental-bookings - Create rental booking
+// POST /rental-bookings
 router.post('/rental-bookings', enforceHTTPS, requestSizeLimiter, bookingLimiter, authenticateToken, async (req, res) => {
   try {
     const { userId, userName, userPhone, vehicleId, vehicleType, vehicleTitle, rentalDays, kmLimit, scheduledDate, scheduledTime, pickupLocation, totalPrice, basePrice } = req.body;
@@ -25,7 +26,6 @@ router.post('/rental-bookings', enforceHTTPS, requestSizeLimiter, bookingLimiter
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Verify user can only create bookings for themselves
     if (userId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Cannot create booking for another user' });
     }
@@ -44,23 +44,23 @@ router.post('/rental-bookings', enforceHTTPS, requestSizeLimiter, bookingLimiter
 
     res.status(201).json({ success: true, message: 'Rental booking created successfully', data: saved });
   } catch (error) {
-    console.error('Rental booking error:', error);
+    console.error('Rental booking error occurred');
     res.status(500).json({ success: false, message: 'Booking creation failed' });
   }
 });
 
-// GET /rental-bookings/user/:userId - Get user rental bookings
+// GET /rental-bookings/user/:userId
 router.get('/rental-bookings/user/:userId', authenticateToken, verifyUserAccess, async (req, res) => {
   try {
     const bookings = await RentalBooking.find({ userId: req.params.userId }).sort({ createdAt: -1 });
     res.json({ success: true, data: bookings });
   } catch (error) {
-    console.error('Rental bookings error:', error);
+    console.error('Rental bookings error occurred');
     res.status(500).json({ success: false, message: 'Unable to retrieve rental bookings' });
   }
 });
 
-// PUT /rental-bookings/:bookingId - Update rental booking
+// PUT /rental-bookings/:bookingId
 router.put('/rental-bookings/:bookingId', authenticateToken, verifyOwnership(RentalBooking), async (req, res) => {
   try {
     const { rentalDays, scheduledDate, scheduledTime, pickupLocation } = req.body;
@@ -81,46 +81,29 @@ router.put('/rental-bookings/:bookingId', authenticateToken, verifyOwnership(Ren
 
     res.json({ success: true, message: 'Booking updated successfully', data: updated });
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Database error occurred');
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// DELETE /rental-bookings/:bookingId - Cancel rental booking
+// DELETE /rental-bookings/:bookingId
 router.delete('/rental-bookings/:bookingId', authenticateToken, verifyOwnership(RentalBooking), async (req, res) => {
   try {
     const updated = await RentalBooking.findByIdAndUpdate(req.params.bookingId, { status: 'cancelled' }, { new: true });
     if (!updated) return res.status(404).json({ success: false, message: 'Booking not found' });
     res.json({ success: true, message: 'Rental booking cancelled successfully' });
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Database error occurred');
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// POST /rental-bookings/:bookingId/pay-advance - Pay advance
+// POST /rental-bookings/:bookingId/pay-advance
 router.post('/rental-bookings/:bookingId/pay-advance', enforceHTTPS, requestSizeLimiter, authenticateToken, verifyOwnership(RentalBooking), async (req, res) => {
   try {
     const { amount, paymentId, paymentMethod } = req.body;
     
     if (!amount || amount <= 0 || !paymentId || !/^[a-zA-Z0-9_-]+$/.test(paymentId)) {
-      return res.status(const express = require('express');
-const router = express.Router();
-const { Booking, RentalBooking } = require('../models/BookingModel');
-const { authenticateToken, requireAdmin, verifyUserAccess } = require('../middleware/auth');
-const { enforceHTTPS, requestSizeLimiter, bookingLimiter, otpLimiter } = require('../middleware/security');
-const { calculateDistanceAndDuration } = require('../services/googleMapsService');
-const { calculateSecureFare } = require('../services/pricingService');
-const { sendOTP, verifyOTP } = require('../services/otpService');
-const { encrypt, decrypt } = require('../utils/encryption');
-const { sanitizeQuery, validateObjectId } = require('../utils/validation');
-
-// POST /advance-payment - Secure payment processing
-router.post('/advance-payment/:bookingId', enforceHTTPS, authenticateToken, async (req, res) => {
-  try {
-    const { amount, paymentId, paymentMethod } = req.body;
-    
-    if (!amount || !paymentId || !paymentMethod || amount <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid payment details' });
     }
     
@@ -150,7 +133,7 @@ router.post('/advance-payment/:bookingId', enforceHTTPS, authenticateToken, asyn
   }
 });
 
-// POST /calculate-route - Secure route calculation
+// POST /calculate-route
 router.post('/calculate-route', enforceHTTPS, requestSizeLimiter, authenticateToken, async (req, res) => {
   try {
     const { source, stops, isRoundTrip, vehicleType = 'sedan' } = req.body;
@@ -174,7 +157,7 @@ router.post('/calculate-route', enforceHTTPS, requestSizeLimiter, authenticateTo
       }
     });
   } catch (error) {
-    console.error('Route calculation error:', error);
+    console.error('Route calculation error occurred');
     res.status(500).json({ 
       success: false, 
       message: 'Failed to calculate route' 
@@ -182,7 +165,7 @@ router.post('/calculate-route', enforceHTTPS, requestSizeLimiter, authenticateTo
   }
 });
 
-// GET / - Get all bookings (for admin panel)
+// GET /
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const sanitized = sanitizeQuery(req.query);
@@ -203,7 +186,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
       data: bookings
     });
   } catch (error) {
-    console.error('Error fetching all bookings:', error);
+    console.error('Error fetching bookings occurred');
     res.status(500).json({
       success: false,
       message: 'Failed to fetch bookings'
@@ -211,7 +194,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// POST /outstation - Secure outstation booking with server-side validation
+// POST /outstation
 router.post('/outstation', enforceHTTPS, requestSizeLimiter, bookingLimiter, authenticateToken, async (req, res) => {
   try {
     const {
@@ -224,12 +207,10 @@ router.post('/outstation', enforceHTTPS, requestSizeLimiter, bookingLimiter, aut
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Validate phone number format
     if (userPhone && !/^[+]?[1-9]\d{1,14}$/.test(userPhone.replace(/\s/g, ''))) {
       return res.status(400).json({ success: false, message: 'Invalid phone number format' });
     }
 
-    // Validate date formats
     if (pickupDate && isNaN(Date.parse(pickupDate))) {
       return res.status(400).json({ success: false, message: 'Invalid pickup date format' });
     }
@@ -237,7 +218,6 @@ router.post('/outstation', enforceHTTPS, requestSizeLimiter, bookingLimiter, aut
       return res.status(400).json({ success: false, message: 'Invalid return date format' });
     }
 
-    // Verify user can only create bookings for themselves
     if (userId !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Cannot create booking for another user' });
     }
@@ -250,11 +230,9 @@ router.post('/outstation', enforceHTTPS, requestSizeLimiter, bookingLimiter, aut
       return res.status(400).json({ success: false, message: 'Return date must be after pickup date' });
     }
 
-    // SERVER-SIDE RECALCULATION
     const { distance, duration } = await calculateDistanceAndDuration(source, stops);
     const serverFareDetails = calculateSecureFare(distance, vehicleType || 'sedan', isRoundTrip);
 
-    // FRAUD DETECTION
     if (clientCalculatedFare && Math.abs(serverFareDetails.totalFare - clientCalculatedFare) > serverFareDetails.totalFare * 0.02) {
       console.warn('Fare manipulation attempt detected');
       return res.status(400).json({ 
@@ -308,7 +286,7 @@ router.post('/outstation', enforceHTTPS, requestSizeLimiter, bookingLimiter, aut
   }
 });
 
-// GET /user/:userId - Get user bookings
+// GET /user/:userId
 router.get('/user/:userId', authenticateToken, verifyUserAccess, async (req, res) => {
   try {
     const bookings = await Booking.find({ userId: req.params.userId })
@@ -322,7 +300,7 @@ router.get('/user/:userId', authenticateToken, verifyUserAccess, async (req, res
   }
 });
 
-// PUT /:id/status - Update booking status
+// PUT /:id/status
 router.put('/:id/status', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { status, driverId } = req.body;
@@ -339,7 +317,7 @@ router.put('/:id/status', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// POST /send-otp - Send OTP for booking verification
+// POST /send-otp
 router.post('/send-otp', otpLimiter, async (req, res) => {
   try {
     const { phone } = req.body;
@@ -359,7 +337,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
   }
 });
 
-// POST /verify-otp - Verify OTP
+// POST /verify-otp
 router.post('/verify-otp', otpLimiter, async (req, res) => {
   try {
     const { phone, otp } = req.body;
