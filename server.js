@@ -24,11 +24,12 @@ const helmet = require('helmet');
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || '*'
-    : '*',
+    ? (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : false)
+    : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static('public'));
 
 // Rate limiting
@@ -59,6 +60,7 @@ const appRoutes = require('./routes/appRoutes');
 const airportBookingNewRoutes = require('./routes/airportBookingNewRoutes');
 const rentalBookingRoutes = require('./routes/rentalBookingRoutes');
 const driverRoutes = require('./routes/driverRoutes');
+const proxyRoutes = require('./routes/proxyRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
@@ -73,6 +75,7 @@ app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/airport-bookings', airportBookingNewRoutes);
 app.use('/api/rental-bookings', rentalBookingRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/proxy', proxyRoutes);
 
 // App version routes
 try {
@@ -216,14 +219,15 @@ try {
     }
   });
   
-  // POST create resort
-  app.post('/api/resorts', async (req, res) => {
+  // POST create resort (admin only)
+  app.post('/api/resorts', authenticateToken, requireAdmin, async (req, res) => {
     try {
       const resort = new Resort(req.body);
       const savedResort = await resort.save();
       res.status(201).json({ success: true, data: savedResort });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      console.error('Resort create error:', error.message);
+      res.status(500).json({ success: false, message: 'Operation failed' });
     }
   });
 }
@@ -249,54 +253,59 @@ const airportSchema = new mongoose.Schema({
 
 const Airport = mongoose.models.Airport || mongoose.model('Airport', airportSchema);
 
-// GET all airports
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
+
+// GET all airports (public)
 app.get('/api/airports', async (req, res) => {
   try {
     const airports = await Airport.find({ active: true }).sort({ city: 1 });
     res.json({ success: true, data: airports });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch airports' });
+    console.error('Airport fetch error:', error.message);
+    res.status(500).json({ success: false, message: 'Service unavailable' });
   }
 });
 
-// POST create airport
-app.post('/api/airports', async (req, res) => {
+// POST create airport (admin only)
+app.post('/api/airports', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const airport = new Airport(req.body);
     const savedAirport = await airport.save();
     res.status(201).json({ success: true, data: savedAirport });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create airport' });
+    console.error('Airport create error:', error.message);
+    res.status(500).json({ success: false, message: 'Operation failed' });
   }
 });
 
-// PUT update airport
-app.put('/api/airports/:id', async (req, res) => {
+// PUT update airport (admin only)
+app.put('/api/airports/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const airport = await Airport.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
     res.json({ success: true, data: airport });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update airport' });
+    console.error('Airport update error:', error.message);
+    res.status(500).json({ success: false, message: 'Operation failed' });
   }
 });
 
-// DELETE airport
-app.delete('/api/airports/:id', async (req, res) => {
+// DELETE airport (admin only)
+app.delete('/api/airports/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const airport = await Airport.findByIdAndDelete(req.params.id);
     if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
     res.json({ success: true, message: 'Airport deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete airport' });
+    console.error('Airport delete error:', error.message);
+    res.status(500).json({ success: false, message: 'Operation failed' });
   }
 });
 
-// Resort UPDATE test endpoint
+// Resort UPDATE endpoint (admin only)
 const Resort = require('./models/Resort');
-app.patch('/api/resorts/:id', async (req, res) => {
+app.patch('/api/resorts/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    console.log('PATCH resort request received:', req.params.id, req.body);
     const resort = await Resort.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -309,13 +318,13 @@ app.patch('/api/resorts/:id', async (req, res) => {
     
     res.json({ success: true, data: resort });
   } catch (error) {
-    console.error('Error updating resort:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Resort update error:', error.message);
+    res.status(500).json({ success: false, message: 'Operation failed' });
   }
 });
 
-// Resort DELETE fallback
-app.delete('/api/resorts/:id', async (req, res) => {
+// Resort DELETE endpoint (admin only)
+app.delete('/api/resorts/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const resort = await Resort.findByIdAndDelete(req.params.id);
     if (!resort) {
@@ -323,7 +332,8 @@ app.delete('/api/resorts/:id', async (req, res) => {
     }
     res.json({ success: true, message: 'Resort deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete resort' });
+    console.error('Resort delete error:', error.message);
+    res.status(500).json({ success: false, message: 'Operation failed' });
   }
 });
 
@@ -488,11 +498,10 @@ app.get('/app-version-manager', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server error:', err.message);
   res.status(500).json({
     success: false,
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: 'Internal Server Error'
   });
 });
 
