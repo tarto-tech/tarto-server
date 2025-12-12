@@ -48,6 +48,9 @@ const bookingLimit = rateLimit({
 app.set('routeCalculationLimit', routeCalculationLimit);
 app.set('bookingLimit', bookingLimit);
 
+// Import middleware
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
+
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const bannerServicesRoutes = require('./routes/Bannerservices');
@@ -252,8 +255,6 @@ const airportSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Airport = mongoose.models.Airport || mongoose.model('Airport', airportSchema);
-
-const { authenticateToken, requireAdmin } = require('./middleware/auth');
 
 // GET all airports (public)
 app.get('/api/airports', async (req, res) => {
