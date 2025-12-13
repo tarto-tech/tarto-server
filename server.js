@@ -53,7 +53,6 @@ const { authenticateToken, requireAdmin } = require('./middleware/auth');
 
 // Import routes
 const mapsRoutes = require('./routes/maps');
-const otpRoutes = require('./routes/otp');
 const userRoutes = require('./routes/userRoutes');
 const bannerServicesRoutes = require('./routes/Bannerservices');
 const vehicleRoutes = require('./routes/vehicleRoutes');
@@ -62,15 +61,14 @@ const locationRoutes = require('./routes/locationRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
-const airportBookingNewRoutes = require('./routes/airportBookingNewRoutes');
-const rentalBookingRoutes = require('./routes/rentalBookingRoutes');
+
 const driverRoutes = require('./routes/driverRoutes');
 const proxyRoutes = require('./routes/proxyRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api/maps', mapsRoutes);
-app.use('/api/otp', otpRoutes);
+
 app.use('/api', appRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
@@ -79,8 +77,6 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', addressRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/airport-bookings', airportBookingNewRoutes);
-app.use('/api/rental-bookings', rentalBookingRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/proxy', proxyRoutes);
 
@@ -93,254 +89,8 @@ try {
 } catch (error) {
   console.warn('App version routes not loaded:', error.message);
 }
-// app.use('/api/resort-bookings', resortBookingRoutes);
 
-// Resort booking routes
-try {
-  const resortBookingRoutes = require('./routes/resortBookingRoutes');
-  app.use('/api/resort-bookings', resortBookingRoutes);
-  console.log('Resort booking routes loaded successfully');
-} catch (error) {
-  console.warn('Resort booking routes not loaded:', error.message);
-}
 
-// Airport booking routes
-try {
-  const airportBookingRoutes = require('./routes/airportBookingRoutes');
-  app.use('/api/airport-bookings', airportBookingRoutes);
-  console.log('Airport booking routes loaded successfully');
-} catch (error) {
-  console.warn('Airport booking routes not loaded:', error.message);
-}
-
-// Fallback resort booking endpoint with UPI support
-try {
-  const ResortBooking = require('./models/resortBooking');
-  
-  app.post('/api/resort-bookings/book', async (req, res) => {
-    try {
-      const { userId, resortId, checkInDate, checkOutDate, guests, totalPrice, paymentMode, paymentId } = req.body;
-      
-      console.log('Payment data received:', { paymentMode, paymentId });
-      
-      const booking = new ResortBooking({
-        userId,
-        resortId,
-        checkInDate,
-        checkOutDate,
-        guests,
-        totalPrice,
-        status: 'pending',
-        payment: {
-          method: paymentMode === 'upi' ? 'upi' : 'cash',
-          status: paymentMode === 'upi' ? 'completed' : 'pending',
-          transactionId: paymentMode === 'upi' ? paymentId : null
-        }
-      });
-      
-      await booking.save();
-      
-      res.status(201).json({
-        success: true,
-        message: 'Resort booking created successfully',
-        data: booking
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create resort booking',
-        error: error.message
-      });
-    }
-  });
-} catch (error) {
-  console.warn('Resort booking fallback not loaded:', error.message);
-}
-
-// Resort routes
-try {
-  const resortRoutes = require('./routes/resortRoutes');
-  app.use('/api/resorts', resortRoutes);
-  console.log('Resort routes loaded successfully');
-} catch (error) {
-  console.warn('Resort routes not loaded:', error.message);
-  
-  // Simple fallback routes for resorts
-  const Resort = require('./models/Resort');
-  
-  // GET all resorts
-  app.get('/api/resorts', async (req, res) => {
-    try {
-      const { lat, lng, radius = 50 } = req.query;
-      let query = { isActive: true };
-      
-      if (lat && lng) {
-        query['location.coordinates'] = {
-          $near: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [parseFloat(lng), parseFloat(lat)]
-            },
-            $maxDistance: radius * 1000
-          }
-        };
-      }
-      
-      const resorts = await Resort.find(query).sort({ createdAt: -1 });
-      
-      res.json({
-        success: true,
-        data: resorts
-      });
-    } catch (error) {
-      console.error('Error fetching resorts:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch resorts'
-      });
-    }
-  });
-  
-  // GET single resort
-  app.get('/api/resorts/:id', async (req, res) => {
-    try {
-      const resort = await Resort.findById(req.params.id);
-      
-      if (!resort) {
-        return res.status(404).json({
-          success: false,
-          message: 'Resort not found'
-        });
-      }
-      
-      res.json({
-        success: true,
-        data: resort
-      });
-    } catch (error) {
-      console.error('Error fetching resort:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch resort'
-      });
-    }
-  });
-  
-  // POST create resort (admin only)
-  app.post('/api/resorts', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-      const resort = new Resort(req.body);
-      const savedResort = await resort.save();
-      res.status(201).json({ success: true, data: savedResort });
-    } catch (error) {
-      console.error('Resort create error:', error.message);
-      res.status(500).json({ success: false, message: 'Operation failed' });
-    }
-  });
-}
-
-// Try to load packages route if it exists
-try {
-  const packageRoutes = require('./routes/packages');
-  app.use('/api/packages', packageRoutes);
-  console.log('Package routes loaded successfully');
-} catch (error) {
-  console.warn('Package routes not loaded:', error.message);
-}
-
-// Airport routes - Direct implementation
-const airportSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  code: { type: String, required: true, unique: true, uppercase: true },
-  city: { type: String, required: true, trim: true },
-  latitude: { type: Number, required: true },
-  longitude: { type: Number, required: true },
-  active: { type: Boolean, default: true }
-}, { timestamps: true });
-
-const Airport = mongoose.models.Airport || mongoose.model('Airport', airportSchema);
-
-// GET all airports (public)
-app.get('/api/airports', async (req, res) => {
-  try {
-    const airports = await Airport.find({ active: true }).sort({ city: 1 });
-    res.json({ success: true, data: airports });
-  } catch (error) {
-    console.error('Airport fetch error:', error.message);
-    res.status(500).json({ success: false, message: 'Service unavailable' });
-  }
-});
-
-// POST create airport (admin only)
-app.post('/api/airports', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const airport = new Airport(req.body);
-    const savedAirport = await airport.save();
-    res.status(201).json({ success: true, data: savedAirport });
-  } catch (error) {
-    console.error('Airport create error:', error.message);
-    res.status(500).json({ success: false, message: 'Operation failed' });
-  }
-});
-
-// PUT update airport (admin only)
-app.put('/api/airports/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const airport = await Airport.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
-    res.json({ success: true, data: airport });
-  } catch (error) {
-    console.error('Airport update error:', error.message);
-    res.status(500).json({ success: false, message: 'Operation failed' });
-  }
-});
-
-// DELETE airport (admin only)
-app.delete('/api/airports/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const airport = await Airport.findByIdAndDelete(req.params.id);
-    if (!airport) return res.status(404).json({ success: false, message: 'Airport not found' });
-    res.json({ success: true, message: 'Airport deleted successfully' });
-  } catch (error) {
-    console.error('Airport delete error:', error.message);
-    res.status(500).json({ success: false, message: 'Operation failed' });
-  }
-});
-
-// Resort UPDATE endpoint (admin only)
-const Resort = require('./models/Resort');
-app.patch('/api/resorts/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const resort = await Resort.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!resort) {
-      return res.status(404).json({ success: false, message: 'Resort not found' });
-    }
-    
-    res.json({ success: true, data: resort });
-  } catch (error) {
-    console.error('Resort update error:', error.message);
-    res.status(500).json({ success: false, message: 'Operation failed' });
-  }
-});
-
-// Resort DELETE endpoint (admin only)
-app.delete('/api/resorts/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const resort = await Resort.findByIdAndDelete(req.params.id);
-    if (!resort) {
-      return res.status(404).json({ success: false, message: 'Resort not found' });
-    }
-    res.json({ success: true, message: 'Resort deleted successfully' });
-  } catch (error) {
-    console.error('Resort delete error:', error.message);
-    res.status(500).json({ success: false, message: 'Operation failed' });
-  }
-});
 
 // Booking update endpoints
 const Booking = require('./models/BookingModel');
