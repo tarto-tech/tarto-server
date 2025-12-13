@@ -3,8 +3,7 @@ const router = express.Router();
 const Driver = require('../models/Driver');
 const DriverOTP = require('../models/DriverOTP');
 const Booking = require('../models/BookingModel');
-const AirportBooking = require('../models/AirportBookingNew');
-const RentalBooking = require('../models/RentalBooking');
+
 
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
@@ -349,38 +348,4 @@ router.put('/:driverId/work-locations', async (req, res) => {
 });
 
 // GET /drivers/:driverId/trips - Get trip history
-router.get('/:driverId/trips', async (req, res) => {
-  try {
-    const driverId = req.params.driverId;
-    
-    const airportTrips = await AirportBooking.find({ driverId }).sort({ createdAt: -1 });
-    const rentalTrips = await RentalBooking.find({ driverId }).sort({ createdAt: -1 });
-    
-    const trips = [
-      ...airportTrips.map(t => ({
-        id: t._id,
-        date: t.scheduledDate,
-        pickup: t.pickupLocation?.name || t.source,
-        drop: t.dropLocation?.name || t.destination,
-        amount: t.totalPrice,
-        status: t.status,
-        type: 'airport'
-      })),
-      ...rentalTrips.map(t => ({
-        id: t._id,
-        date: t.scheduledDate,
-        pickup: t.pickupLocation?.name,
-        drop: 'Rental',
-        amount: t.totalAmount,
-        status: t.status,
-        type: 'rental'
-      }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    res.json(trips);
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch trips' });
-  }
-});
-
 module.exports = router;
