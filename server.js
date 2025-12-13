@@ -64,6 +64,7 @@ const appRoutes = require('./routes/appRoutes');
 
 const driverRoutes = require('./routes/driverRoutes');
 const proxyRoutes = require('./routes/proxyRoutes');
+const pricingRoutes = require('./routes/pricingRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
@@ -79,6 +80,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/proxy', proxyRoutes);
+app.use('/api/pricing', pricingRoutes);
 
 // App version routes
 try {
