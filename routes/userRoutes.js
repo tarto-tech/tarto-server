@@ -34,6 +34,10 @@ router.get('/', async (req, res) => {
 // Add this to userRoutes.js
 router.post('/login', userController.loginUser);
 
+// OTP routes
+router.post('/send-otp', userController.sendOTP);
+router.post('/verify-otp', userController.verifyOTP);
+
 
 // Check if user exists
 router.get('/check-exists', userController.checkUserExists);

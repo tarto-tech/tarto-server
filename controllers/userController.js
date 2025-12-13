@@ -1,5 +1,6 @@
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const { sendOTP, verifyOTP } = require('../services/otpService');
 
 // JWT configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
@@ -197,6 +198,74 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Login failed'
+    });
+  }
+};
+
+// Send OTP
+exports.sendOTP = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+    
+    const result = await sendOTP(phone);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'OTP sent successfully'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.error || 'Failed to send OTP'
+      });
+    }
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'No response from OTP service'
+    });
+  }
+};
+
+// Verify OTP
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    
+    if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number and OTP are required'
+      });
+    }
+    
+    const result = await verifyOTP(phone, otp);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'OTP verified successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error || 'Invalid OTP'
+      });
+    }
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'OTP verification failed'
     });
   }
 };

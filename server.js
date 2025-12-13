@@ -52,6 +52,8 @@ app.set('bookingLimit', bookingLimit);
 const { authenticateToken, requireAdmin } = require('./middleware/auth');
 
 // Import routes
+const mapsRoutes = require('./routes/maps');
+const otpRoutes = require('./routes/otp');
 const userRoutes = require('./routes/userRoutes');
 const bannerServicesRoutes = require('./routes/Bannerservices');
 const vehicleRoutes = require('./routes/vehicleRoutes');
@@ -67,6 +69,8 @@ const proxyRoutes = require('./routes/proxyRoutes');
 // const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
+app.use('/api/maps', mapsRoutes);
+app.use('/api/otp', otpRoutes);
 app.use('/api', appRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', bannerServicesRoutes);
