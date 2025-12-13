@@ -22,7 +22,12 @@ router.post('/send', async (req, res) => {
     });
     
     console.log('MSG91 Response:', response.data);
-    res.json(response.data);
+    
+    // Fix: Return message field instead of request_id
+    res.json({
+      type: 'success',
+      message: response.data.request_id || response.data.message
+    });
   } catch (error) {
     console.error('OTP Send Error:', error.response?.data || error.message);
     res.status(500).json({ 
