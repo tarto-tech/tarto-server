@@ -11,17 +11,22 @@ router.post('/send', async (req, res) => {
     
     console.log('Sending OTP to:', phoneNumber);
     
-    const response = await axios.post('https://control.msg91.com/api/v5/otp', {
+    const requestData = {
       template_id: process.env.MSG91_TEMPLATE_ID,
       mobile: phoneNumber,
-    }, {
+      authkey: process.env.MSG91_AUTH_KEY
+    };
+    
+    console.log('Request Data:', requestData);
+    
+    const response = await axios.post('https://control.msg91.com/api/v5/otp', requestData, {
       headers: {
-        'authkey': process.env.MSG91_AUTH_KEY,
         'Content-Type': 'application/json'
       }
     });
     
-    console.log('MSG91 Response:', response.data);
+    console.log('MSG91 Full Response:', response.data);
+    console.log('MSG91 Status:', response.status);
     
     // Fix: Return message field instead of request_id
     res.json({
