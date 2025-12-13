@@ -12,14 +12,16 @@ const pricingLimit = rateLimit({
 // POST /api/pricing/calculate
 router.post('/calculate', pricingLimit, (req, res) => {
   try {
-    const { distance, vehicleType, isRoundTrip } = req.body;
+    const { distance, vehicleType, vehicleId, isRoundTrip } = req.body;
     
-    if (!distance || !vehicleType) {
+    if (!distance || (!vehicleType && !vehicleId)) {
       return res.status(400).json({
         success: false,
-        message: 'Distance and vehicle type are required'
+        message: 'Distance and vehicle type/ID are required'
       });
     }
+    
+    const vType = vehicleType || 'sedan';
     
     if (distance <= 0 || distance > 2000) {
       return res.status(400).json({
@@ -28,7 +30,7 @@ router.post('/calculate', pricingLimit, (req, res) => {
       });
     }
     
-    const pricing = calculateSecureFare(distance, vehicleType, isRoundTrip || false);
+    const pricing = calculateSecureFare(distance, vType, isRoundTrip || false);
     
     res.json({
       success: true,
