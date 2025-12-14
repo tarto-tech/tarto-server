@@ -312,41 +312,6 @@ router.post('/:driverId/status', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId - Get driver by ID
-router.get('/:driverId', async (req, res) => {
-  try {
-    const driver = await Driver.findById(req.params.driverId);
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PUT /drivers/:driverId/work-locations - Update work locations
-router.put('/:driverId/work-locations', async (req, res) => {
-  try {
-    const { driverId } = req.params;
-    const { workLocations } = req.body;
-
-    const driver = await Driver.findByIdAndUpdate(
-      driverId,
-      { workLocations },
-      { new: true }
-    );
-
-    if (!driver) {
-      return res.status(404).json({ success: false, error: 'Driver not found' });
-    }
-
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // GET /drivers/:driverId/bookings - Get driver bookings with filters
 router.get('/:driverId/bookings', async (req, res) => {
   try {
@@ -423,6 +388,41 @@ router.post('/:driverId/accept-trip', async (req, res) => {
     }
     
     res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /drivers/:driverId/work-locations - Update work locations
+router.put('/:driverId/work-locations', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { workLocations } = req.body;
+
+    const driver = await Driver.findByIdAndUpdate(
+      driverId,
+      { workLocations },
+      { new: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({ success: false, error: 'Driver not found' });
+    }
+
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /drivers/:driverId - Get driver by ID (MUST BE LAST)
+router.get('/:driverId', async (req, res) => {
+  try {
+    const driver = await Driver.findById(req.params.driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    res.json({ success: true, data: driver });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
