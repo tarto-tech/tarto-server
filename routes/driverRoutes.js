@@ -233,23 +233,41 @@ router.post('/:driverId/location', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId/earnings - Get driver earnings
+// GET /drivers/:driverId/earnings - Get driver earnings history
 router.get('/:driverId/earnings', async (req, res) => {
   try {
-    const driver = await Driver.findById(req.params.driverId);
+    const { page = 1, limit = 20, type } = req.query;
+    const DriverEarning = require('../models/DriverEarning');
+    const mongoose = require('mongoose');
     
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
+    const filter = { driverId: req.params.driverId };
+    if (type) filter.earningType = type;
+    
+    const earnings = await DriverEarning.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .populate('bookingId', 'source destination distance');
+    
+    const totalEarnings = await DriverEarning.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
     
     res.json({
-      today: 0,
-      thisWeek: 0,
-      thisMonth: 0,
-      total: driver.totalEarnings || 0
+      success: true,
+      data: {
+        earnings,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: await DriverEarning.countDocuments(filter)
+        }
+      }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch earnings' });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

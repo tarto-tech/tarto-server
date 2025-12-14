@@ -677,26 +677,60 @@ router.post('/:bookingId/reject', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/start - Start trip
+// POST /bookings/:bookingId/start - Start trip with advance payment
 router.post('/:bookingId/start', async (req, res) => {
   try {
     const { bookingId } = req.params;
+    const { driverId, startTime } = req.body;
     
-    let booking = await AirportBooking.findById(bookingId);
-    if (!booking) booking = await RentalBooking.findById(bookingId);
-    if (!booking) booking = await Booking.findById(bookingId);
-    
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (booking.status !== 'confirmed' && booking.status !== 'accepted') {
+      return res.status(400).json({ success: false, message: 'Booking must be confirmed to start trip' });
     }
     
-    booking.status = 'in_progress';
-    booking.startedAt = new Date();
-    await booking.save();
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status: 'started', startTime: startTime || new Date(), updatedAt: new Date() },
+      { new: true }
+    );
     
-    res.json({ success: true, message: 'Trip started' });
+    const advanceAmount = booking.payment?.advanceAmount || 0;
+    if (advanceAmount > 0) {
+      const DriverEarning = require('../models/DriverEarning');
+      const Driver = require('../models/Driver');
+      
+      await DriverEarning.create({
+        driverId: booking.driverId,
+        bookingId: bookingId,
+        tripType: booking.type || 'outstation',
+        amount: advanceAmount,
+        earningType: 'advance_payment',
+        status: 'completed',
+        transactionDate: new Date(),
+        tripDetails: {
+          source: booking.source?.name || booking.source?.address,
+          destination: booking.destination?.name || booking.destination?.address,
+          distance: booking.distance,
+          customerName: booking.userName,
+          vehicleType: booking.vehicleName
+        }
+      });
+      
+      await Driver.findByIdAndUpdate(booking.driverId, { $inc: { totalEarnings: advanceAmount } });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Trip started successfully',
+      data: {
+        booking: updatedBooking,
+        advanceEarning: advanceAmount,
+        message: advanceAmount > 0 ? `₹${advanceAmount} advance payment added to your earnings` : 'Trip started successfully'
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to start trip' });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
