@@ -347,6 +347,36 @@ router.put('/:driverId/work-locations', async (req, res) => {
   }
 });
 
+// GET /drivers/:driverId/bookings - Get driver bookings with filters
+router.get('/:driverId/bookings', async (req, res) => {
+  try {
+    const { status, type } = req.query;
+    const filter = { driverId: req.params.driverId };
+    
+    if (status) filter.status = status;
+    if (type) filter.type = type;
+    
+    const bookings = await Booking.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/:driverId/active-bookings - Get active bookings
+router.get('/:driverId/active-bookings', async (req, res) => {
+  try {
+    const bookings = await Booking.find({ 
+      driverId: req.params.driverId,
+      status: { $in: ['accepted', 'in_progress', 'started'] }
+    }).sort({ createdAt: -1 });
+    
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {
@@ -366,7 +396,10 @@ router.get('/:driverId/available-trips', async (req, res) => {
   try {
     const trips = await Booking.find({ 
       status: 'pending',
-      driverId: { $exists: false }
+      $or: [
+        { driverId: { $exists: false } },
+        { driverId: null }
+      ]
     }).sort({ createdAt: -1 }).limit(20);
     
     res.json({ success: true, data: trips });
