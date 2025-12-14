@@ -321,9 +321,12 @@ router.get('/:driverId/bookings', async (req, res) => {
     if (status) filter.status = status;
     if (type) filter.type = type;
     
+    console.log('Fetching bookings with filter:', filter);
     const bookings = await Booking.find(filter).sort({ createdAt: -1 });
+    console.log('Found bookings:', bookings.length);
     res.json({ success: true, data: bookings });
   } catch (error) {
+    console.error('Error fetching driver bookings:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
