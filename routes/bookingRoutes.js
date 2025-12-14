@@ -572,25 +572,37 @@ router.post('/:id/cancel', async (req, res) => {
 // POST /bookings/:bookingId/accept - Accept booking
 router.post('/:bookingId/accept', async (req, res) => {
   try {
-    const { bookingId } = req.params;
     const { driverId } = req.body;
     
-    let booking = await AirportBooking.findById(bookingId);
-    if (!booking) booking = await RentalBooking.findById(bookingId);
-    if (!booking) booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(req.params.bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (booking.status !== 'pending') return res.status(400).json({ success: false, message: 'Booking already accepted or completed' });
     
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
+    const Driver = require('../models/Driver');
+    const driver = await Driver.findById(driverId);
+    if (!driver) return res.status(404).json({ success: false, message: 'Driver not found' });
     
     booking.status = 'accepted';
-    booking.driverId = driverId;
+    booking.driverId = driver._id;
+    booking.driverName = driver.name;
+    booking.vehicleName = driver.vehicleDetails?.type || 'N/A';
+    booking.vehicleNumber = driver.vehicleDetails?.registrationNumber || 'N/A';
     booking.acceptedAt = new Date();
     await booking.save();
     
-    res.json({ success: true, message: 'Booking accepted' });
+    res.json({
+      success: true,
+      message: 'Booking accepted successfully',
+      data: {
+        bookingId: booking._id,
+        status: booking.status,
+        driverName: booking.driverName,
+        vehicleName: booking.vehicleName,
+        vehicleNumber: booking.vehicleNumber
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to accept booking' });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
