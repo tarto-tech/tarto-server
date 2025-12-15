@@ -110,7 +110,9 @@ const bookingSchema = new mongoose.Schema({
   cancellationReason: String,
   cancelledAt: Date,
   startedAt: Date,
-  completedAt: Date
+  completedAt: Date,
+  completionOTP: String,
+  otpGeneratedAt: Date
 }, { timestamps: true });
 
 // Add this pre-save hook to set the type based on distance if not provided

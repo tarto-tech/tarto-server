@@ -808,26 +808,55 @@ router.post('/:bookingId/start', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/complete - Complete trip
-router.post('/:bookingId/complete', async (req, res) => {
+// POST /bookings/:bookingId/generate-otp - Generate OTP for trip completion
+router.post('/:bookingId/generate-otp', async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { endLocation, finalAmount } = req.body;
     
-    let booking = await AirportBooking.findById(bookingId);
-    if (!booking) booking = await RentalBooking.findById(bookingId);
-    if (!booking) booking = await Booking.findById(bookingId);
-    
+    const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
     
-    booking.status = 'completed';
-    booking.completedAt = new Date();
-    if (finalAmount) booking.totalPrice = finalAmount;
-    await booking.save();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    res.json({ success: true, message: 'Trip completed' });
+    await Booking.findByIdAndUpdate(bookingId, {
+      completionOTP: otp,
+      otpGeneratedAt: new Date()
+    });
+    
+    res.json({ success: true, otp, message: 'OTP sent to customer' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to generate OTP' });
+  }
+});
+
+// POST /bookings/:bookingId/complete - Complete trip with OTP verification
+router.post('/:bookingId/complete', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { otp, endTime } = req.body;
+    
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    if (booking.completionOTP !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        status: 'completed',
+        completedAt: endTime || new Date(),
+        $unset: { completionOTP: 1, otpGeneratedAt: 1 }
+      },
+      { new: true }
+    );
+    
+    res.json({ success: true, data: updatedBooking, message: 'Trip completed successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to complete trip' });
   }
