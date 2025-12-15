@@ -325,6 +325,31 @@ router.get('/driver/:driverId', async (req, res) => {
   }
 });
 
+// GET /bookings/driver/:driverId/active - Check if driver has active booking
+router.get('/driver/:driverId/active', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+
+    const activeBooking = await Booking.findOne({
+      driverId: driverId,
+      status: { $in: ['accepted', 'confirmed', 'started'] }
+    });
+
+    res.json({
+      success: true,
+      hasActiveBooking: !!activeBooking,
+      activeBooking: activeBooking || null
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check active booking',
+      error: error.message
+    });
+  }
+});
+
 // Get user's bookings
 router.get('/user/:userId', async (req, res) => {
   try {
@@ -614,40 +639,89 @@ router.post('/:id/cancel', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/accept - Accept booking
+// POST /bookings/:bookingId/accept - Accept booking with single trip validation
 router.post('/:bookingId/accept', async (req, res) => {
   try {
+    const { bookingId } = req.params;
     const { driverId } = req.body;
-    
-    const booking = await Booking.findById(req.params.bookingId);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (booking.status !== 'pending') return res.status(400).json({ success: false, message: 'Booking already accepted or completed' });
-    
+
+    // Validate required fields
+    if (!driverId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Driver ID is required'
+      });
+    }
+
+    // Check if driver already has an active booking
+    const existingActiveBooking = await Booking.findOne({
+      driverId: driverId,
+      status: { $in: ['accepted', 'confirmed', 'started'] }
+    });
+
+    if (existingActiveBooking) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active booking. Complete or cancel it first.',
+        activeBookingId: existingActiveBooking._id
+      });
+    }
+
+    // Find the booking to accept
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Validate booking status
+    if (booking.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking is no longer available'
+      });
+    }
+
+    // Get driver and vehicle details
     const Driver = require('../models/Driver');
-    const driver = await Driver.findById(driverId);
-    if (!driver) return res.status(404).json({ success: false, message: 'Driver not found' });
-    
-    booking.status = 'accepted';
-    booking.driverId = driver._id;
-    booking.driverName = driver.name;
-    booking.vehicleName = driver.vehicleDetails?.type || 'N/A';
-    booking.vehicleNumber = driver.vehicleDetails?.registrationNumber || 'N/A';
-    booking.acceptedAt = new Date();
-    await booking.save();
-    
+    const driver = await Driver.findById(driverId).populate('vehicleId');
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+
+    // Update booking with driver details
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        status: 'accepted',
+        driverId: driverId,
+        driverName: driver.name,
+        vehicleName: driver.vehicleDetails?.type || 'Vehicle',
+        vehicleNumber: driver.vehicleDetails?.registrationNumber,
+        acceptedAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
     res.json({
       success: true,
       message: 'Booking accepted successfully',
-      data: {
-        bookingId: booking._id,
-        status: booking.status,
-        driverName: booking.driverName,
-        vehicleName: booking.vehicleName,
-        vehicleNumber: booking.vehicleNumber
-      }
+      data: updatedBooking
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error accepting booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to accept booking',
+      error: error.message
+    });
   }
 });
 

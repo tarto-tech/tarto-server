@@ -363,6 +363,31 @@ router.get('/:driverId/active-bookings', async (req, res) => {
   }
 });
 
+// GET /drivers/:driverId/active-booking - Check if driver has active booking
+router.get('/:driverId/active-booking', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+
+    const activeBooking = await Booking.findOne({
+      driverId: driverId,
+      status: { $in: ['accepted', 'confirmed', 'started'] }
+    });
+
+    res.json({
+      success: true,
+      hasActiveBooking: !!activeBooking,
+      activeBooking: activeBooking || null
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check active booking',
+      error: error.message
+    });
+  }
+});
+
 // GET /drivers/:driverId/trips - Get trip history
 router.get('/:driverId/trips', async (req, res) => {
   try {
