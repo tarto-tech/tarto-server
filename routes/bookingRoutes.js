@@ -831,6 +831,16 @@ router.post('/:bookingId/generate-otp', async (req, res) => {
   }
 });
 
+// GET /bookings/test-ids - Get sample booking IDs for testing
+router.get('/test-ids', async (req, res) => {
+  try {
+    const bookings = await Booking.find({}).limit(5).select('_id status');
+    res.json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch test IDs' });
+  }
+});
+
 // GET /bookings/:bookingId/completion-otp - Check for completion OTP (Customer polling)
 router.get('/:bookingId/completion-otp', async (req, res) => {
   try {
