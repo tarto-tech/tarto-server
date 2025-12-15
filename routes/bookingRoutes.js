@@ -831,6 +831,26 @@ router.post('/:bookingId/generate-otp', async (req, res) => {
   }
 });
 
+// GET /bookings/:bookingId/completion-otp - Check for completion OTP (Customer polling)
+router.get('/:bookingId/completion-otp', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    if (!booking.completionOTP) {
+      return res.json({ success: false, message: 'No completion OTP generated yet' });
+    }
+    
+    res.json({ success: true, otp: booking.completionOTP, message: 'Completion OTP available' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to check OTP' });
+  }
+});
+
 // POST /bookings/:bookingId/complete - Complete trip with OTP verification
 router.post('/:bookingId/complete', async (req, res) => {
   try {
