@@ -684,9 +684,9 @@ router.post('/:bookingId/accept', async (req, res) => {
       });
     }
 
-    // Get driver and vehicle details
+    // Get driver details
     const Driver = require('../models/Driver');
-    const driver = await Driver.findById(driverId).populate('vehicleId');
+    const driver = await Driver.findById(driverId);
     if (!driver) {
       return res.status(404).json({
         success: false,
@@ -841,6 +841,38 @@ router.get('/test-ids', async (req, res) => {
   }
 });
 
+// POST /bookings/:bookingId/complete - Complete trip with OTP verification
+router.post('/:bookingId/complete', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { otp, endTime } = req.body;
+    
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, error: 'Booking not found' });
+    }
+    
+    if (booking.completionOTP !== otp) {
+      return res.status(400).json({ success: false, error: 'Invalid OTP' });
+    }
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        status: 'completed',
+        endTime: endTime || new Date(),
+        completedAt: endTime || new Date(),
+        $unset: { completionOTP: 1, otpGeneratedAt: 1 }
+      },
+      { new: true }
+    );
+    
+    res.json({ success: true, data: updatedBooking, message: 'Trip completed successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // GET /bookings/:bookingId/completion-otp - Check for completion OTP (Customer polling)
 router.get('/:bookingId/completion-otp', async (req, res) => {
   try {
@@ -858,37 +890,6 @@ router.get('/:bookingId/completion-otp', async (req, res) => {
     res.json({ success: true, otp: booking.completionOTP, message: 'Completion OTP available' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to check OTP' });
-  }
-});
-
-// POST /bookings/:bookingId/complete - Complete trip with OTP verification
-router.post('/:bookingId/complete', async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { otp, endTime } = req.body;
-    
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-    
-    if (booking.completionOTP !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
-    }
-    
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      bookingId,
-      {
-        status: 'completed',
-        completedAt: endTime || new Date(),
-        $unset: { completionOTP: 1, otpGeneratedAt: 1 }
-      },
-      { new: true }
-    );
-    
-    res.json({ success: true, data: updatedBooking, message: 'Trip completed successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to complete trip' });
   }
 });
 
