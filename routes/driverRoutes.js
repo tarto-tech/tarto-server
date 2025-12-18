@@ -93,30 +93,55 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// GET /drivers/phone/:phone - Check if driver exists
-router.get('/phone/:phone', async (req, res) => {
+// GET /drivers/profile/phone/:phoneNumber - Check if driver exists and get profile
+router.get('/profile/phone/:phoneNumber', async (req, res) => {
   try {
-    const driver = await Driver.findOne({ phone: req.params.phone });
+    const driver = await Driver.findOne({ phone: req.params.phoneNumber });
     
     if (driver) {
-      res.json({ success: true, data: driver });
+      // Generate token
+      const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
+      
+      res.json({ 
+        success: true, 
+        data: {
+          _id: driver._id,
+          name: driver.name,
+          email: driver.email,
+          phone: driver.phone,
+          gender: driver.gender,
+          profileImage: driver.profileImage,
+          status: driver.status,
+          vehicleDetails: driver.vehicleDetails,
+          documents: driver.documents,
+          rating: driver.rating,
+          totalTrips: driver.totalTrips,
+          totalEarnings: driver.totalEarnings,
+          createdAt: driver.createdAt
+        },
+        token
+      });
     } else {
-      res.json({ success: false, message: 'Driver not found', data: null });
+      res.status(404).json({ success: false, message: 'Driver not found' });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// POST /drivers/register - Register new driver
-router.post('/register', async (req, res) => {
+// POST /drivers/auth/register - Register new driver
+router.post('/auth/register', async (req, res) => {
   try {
-    const { phone, name, email, vehicleDetails, documents } = req.body;
+    const { phone, name, email, gender } = req.body;
+    
+    if (!phone || !name) {
+      return res.status(400).json({ success: false, message: 'Phone and name are required' });
+    }
     
     // Check if driver already exists
     let driver = await Driver.findOne({ phone });
     if (driver) {
-      return res.status(400).json({ success: false, message: 'Driver already exists' });
+      return res.status(400).json({ success: false, message: 'Driver already exists with this phone number' });
     }
     
     // Create new driver
@@ -124,9 +149,8 @@ router.post('/register', async (req, res) => {
       phone,
       name,
       email,
-      vehicleDetails,
-      documents,
-      status: 'pending'
+      gender,
+      status: 'pending_verification'
     });
     
     await driver.save();
@@ -134,12 +158,19 @@ router.post('/register', async (req, res) => {
     // Generate token
     const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
     
-    res.json({
+    res.status(201).json({
       success: true,
+      message: 'Driver profile created successfully',
       data: {
-        token,
-        driver
-      }
+        _id: driver._id,
+        name: driver.name,
+        email: driver.email,
+        phone: driver.phone,
+        gender: driver.gender,
+        status: driver.status,
+        createdAt: driver.createdAt
+      },
+      token
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

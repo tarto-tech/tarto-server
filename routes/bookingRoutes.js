@@ -662,8 +662,7 @@ router.post('/:bookingId/accept', async (req, res) => {
     if (existingActiveBooking) {
       return res.status(400).json({
         success: false,
-        message: 'You already have an active booking. Complete or cancel it first.',
-        activeBookingId: existingActiveBooking._id
+        error: 'You already have an active booking. Complete it first.'
       });
     }
 
