@@ -60,7 +60,7 @@ const driverSchema = new mongoose.Schema({
   
   currentLocation: {
     type: { type: String, default: 'Point' },
-    coordinates: [Number]
+    coordinates: { type: [Number], default: [0, 0] }
   },
   
   location: {
