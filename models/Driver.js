@@ -13,6 +13,8 @@ const driverSchema = new mongoose.Schema({
   profileImage: { type: String },
   
   vehicleDetails: {
+    vehicleNumber: { type: String },
+    vehicleType: { type: String },
     type: { type: String, enum: ['auto', 'bike', 'car'] },
     number: { type: String },
     registrationNumber: { type: String },

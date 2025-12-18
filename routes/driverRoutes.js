@@ -141,9 +141,9 @@ router.post('/auth/register', async (req, res) => {
       address,
       dateOfBirth,
       licenseNumber,
-      gender,
       vehicleDetails,
-      documents
+      gender,
+      documents 
     } = req.body;
     
     // Check if driver already exists
@@ -153,10 +153,28 @@ router.post('/auth/register', async (req, res) => {
     }
     
     // Validate required fields
-    if (!phone || !name || !email || !agencyName || !panNumber || !licenseNumber) {
+    if (!phone || !name || !email || !agencyName || !panNumber || !licenseNumber || !vehicleDetails?.vehicleNumber) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Phone, name, email, agency name, PAN number, and license number are required' 
+        message: 'Phone, name, email, agency name, PAN number, license number, and vehicle number are required' 
+      });
+    }
+    
+    // Validate PAN number format
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(panNumber.toUpperCase())) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid PAN number format' 
+      });
+    }
+    
+    // Validate vehicle number format
+    const vehicleRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
+    if (!vehicleRegex.test(vehicleDetails.vehicleNumber.toUpperCase())) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid vehicle number format' 
       });
     }
     
@@ -166,12 +184,15 @@ router.post('/auth/register', async (req, res) => {
       name,
       email,
       agencyName,
-      panNumber,
+      panNumber: panNumber.toUpperCase(),
       address,
       dateOfBirth,
       licenseNumber,
+      vehicleDetails: {
+        vehicleNumber: vehicleDetails.vehicleNumber.toUpperCase(),
+        vehicleType: vehicleDetails.vehicleType
+      },
       gender,
-      vehicleDetails,
       documents,
       status: 'pending'
     });
