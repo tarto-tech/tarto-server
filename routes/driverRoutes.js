@@ -132,16 +132,32 @@ router.get('/profile/phone/:phoneNumber', async (req, res) => {
 // POST /drivers/auth/register - Register new driver
 router.post('/auth/register', async (req, res) => {
   try {
-    const { phone, name, email, gender } = req.body;
-    
-    if (!phone || !name) {
-      return res.status(400).json({ success: false, message: 'Phone and name are required' });
-    }
+    const { 
+      phone, 
+      name, 
+      email, 
+      agencyName,
+      panNumber,
+      address,
+      dateOfBirth,
+      licenseNumber,
+      gender,
+      vehicleDetails,
+      documents
+    } = req.body;
     
     // Check if driver already exists
     let driver = await Driver.findOne({ phone });
     if (driver) {
-      return res.status(400).json({ success: false, message: 'Driver already exists with this phone number' });
+      return res.status(400).json({ success: false, message: 'Driver already exists' });
+    }
+    
+    // Validate required fields
+    if (!phone || !name || !email || !agencyName || !panNumber || !licenseNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Phone, name, email, agency name, PAN number, and license number are required' 
+      });
     }
     
     // Create new driver
@@ -149,8 +165,15 @@ router.post('/auth/register', async (req, res) => {
       phone,
       name,
       email,
+      agencyName,
+      panNumber,
+      address,
+      dateOfBirth,
+      licenseNumber,
       gender,
-      status: 'pending_verification'
+      vehicleDetails,
+      documents,
+      status: 'pending'
     });
     
     await driver.save();
@@ -158,19 +181,12 @@ router.post('/auth/register', async (req, res) => {
     // Generate token
     const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
     
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Driver profile created successfully',
       data: {
-        _id: driver._id,
-        name: driver.name,
-        email: driver.email,
-        phone: driver.phone,
-        gender: driver.gender,
-        status: driver.status,
-        createdAt: driver.createdAt
-      },
-      token
+        token,
+        driver
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

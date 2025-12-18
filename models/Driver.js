@@ -3,7 +3,12 @@ const mongoose = require('mongoose');
 const driverSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  email: { type: String },
+  email: { type: String, required: true },
+  agencyName: { type: String, required: true },
+  panNumber: { type: String, required: true },
+  address: { type: String },
+  dateOfBirth: { type: Date },
+  licenseNumber: { type: String, required: true },
   gender: { type: String, enum: ['male', 'female', 'other'] },
   profileImage: { type: String },
   
