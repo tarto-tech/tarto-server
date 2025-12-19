@@ -244,6 +244,38 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Driver app versions endpoint
+app.get('/api/driver-appversions', async (req, res) => {
+  try {
+    const driverAppVersion = {
+      latestVersion: "1.2.0",
+      minRequiredVersion: "1.1.0", 
+      forceUpdate: false,
+      updateMessage: "New driver features available!",
+      updateUrl: {
+        android: "https://play.google.com/store/apps/details?id=com.tarto.driver",
+        ios: "https://apps.apple.com/app/tarto-driver/id123456789"
+      },
+      releaseNotes: [
+        "Improved trip tracking",
+        "Better earnings calculation", 
+        "Bug fixes and performance improvements"
+      ],
+      appType: "driver"
+    };
+
+    res.json({
+      success: true,
+      data: driverAppVersion
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch driver app version info"
+    });
+  }
+});
+
 
 
 
