@@ -279,8 +279,6 @@ router.get('/driver/:driverId', async (req, res) => {
   try {
     const driverId = req.params.driverId;
     
-    const airportBookings = await AirportBooking.find({ driverId }).sort({ createdAt: -1 });
-    const rentalBookings = await RentalBooking.find({ driverId }).sort({ createdAt: -1 });
     const regularBookings = await Booking.find({ driverId }).sort({ createdAt: -1 });
     
     const bookings = [
