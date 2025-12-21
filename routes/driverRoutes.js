@@ -353,160 +353,20 @@ router.get('/:driverId/earnings', async (req, res) => {
   }
 });
 
-module.exports = router;ed' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update location' });
-  }
-});
-
-// GET /drivers/:driverId/available-trips - Get trips based on driver's location and work locations
+// GET /drivers/:driverId/available-trips - Get available trips
 router.get('/:driverId/available-trips', async (req, res) => {
   try {
-    const { driverId } = req.params;
-    const { latitude, longitude, radius = 50 } = req.query;
-    
-    const driver = await Driver.findById(driverId);
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    const searchLat = latitude ? parseFloat(latitude) : driver.location?.latitude;
-    const searchLng = longitude ? parseFloat(longitude) : driver.location?.longitude;
-    
-    if (!searchLat || !searchLng) {
-      return res.status(400).json({ success: false, message: 'Location required' });
-    }
-    
-    const bookings = await Booking.find({
+    const trips = await Booking.find({ 
       status: 'pending',
-      driverId: { $exists: false },
-      rejectedDrivers: { $ne: driverId }
-    }).populate('userId', 'name phone').populate('vehicleId', 'name type');
+      $or: [
+        { driverId: { $exists: false } },
+        { driverId: null }
+      ]
+    }).sort({ createdAt: -1 }).limit(20);
     
-    const nearbyTrips = bookings.filter(booking => {
-      if (!booking.source?.location?.coordinates) return false;
-      const [lng, lat] = booking.source.location.coordinates;
-      const distance = getDistance(searchLat, searchLng, lat, lng);
-      return distance <= radius;
-    }).map(booking => {
-      const [lng, lat] = booking.source.location.coordinates;
-      return {
-        ...booking.toObject(),
-        distanceFromDriver: getDistance(searchLat, searchLng, lat, lng)
-      };
-    }).sort((a, b) => a.distanceFromDriver - b.distanceFromDriver);
-    
-    res.json({ success: true, data: nearbyTrips });
+    res.json({ success: true, data: trips });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-
-// GET /drivers/:driverId/earnings - Get driver earnings history
-router.get('/:driverId/earnings', async (req, res) => {
-  try {
-    const { page = 1, limit = 20, type } = req.query;
-    const DriverEarning = require('../models/DriverEarning');
-    const mongoose = require('mongoose');
-    
-    const filter = { driverId: req.params.driverId };
-    if (type) filter.earningType = type;
-    
-    const earnings = await DriverEarning.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .populate('bookingId', 'source destination distance');
-    
-    const totalEarnings = await DriverEarning.aggregate([
-      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    
-    res.json({
-      success: true,
-      data: {
-        earnings,
-        totalEarnings: totalEarnings[0]?.total || 0,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: await DriverEarning.countDocuments(filter)
-        }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PUT /drivers/:id/approve - Approve driver
-router.put('/:id/approve', async (req, res) => {
-  try {
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.id,
-      { status: 'approved' },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PATCH /drivers/:id/status - Update driver status
-router.patch('/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// POST /drivers/:driverId/status - Update driver status (alternative endpoint)
-router.post('/:driverId/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.driverId,
-      { status },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: { driver } });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update status' });
   }
 });
 
@@ -519,12 +379,9 @@ router.get('/:driverId/bookings', async (req, res) => {
     if (status) filter.status = status;
     if (type) filter.type = type;
     
-    console.log('Fetching bookings with filter:', filter);
     const bookings = await Booking.find(filter).sort({ createdAt: -1 });
-    console.log('Found bookings:', bookings.length);
     res.json({ success: true, data: bookings });
   } catch (error) {
-    console.error('Error fetching driver bookings:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -582,23 +439,6 @@ router.get('/:driverId/trips', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId/available-trips - Get available trips
-router.get('/:driverId/available-trips', async (req, res) => {
-  try {
-    const trips = await Booking.find({ 
-      status: 'pending',
-      $or: [
-        { driverId: { $exists: false } },
-        { driverId: null }
-      ]
-    }).sort({ createdAt: -1 }).limit(20);
-    
-    res.json({ success: true, data: trips });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // POST /drivers/:driverId/accept-trip - Accept a trip
 router.post('/:driverId/accept-trip', async (req, res) => {
   try {
@@ -616,6 +456,65 @@ router.post('/:driverId/accept-trip', async (req, res) => {
     res.json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /drivers/:id/approve - Approve driver
+router.put('/:id/approve', async (req, res) => {
+  try {
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.id,
+      { status: 'approved' },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /drivers/:id/status - Update driver status
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /drivers/:driverId/status - Update driver status
+router.post('/:driverId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.driverId,
+      { status },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, data: { driver } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update status' });
   }
 });
 
