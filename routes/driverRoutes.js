@@ -5,7 +5,6 @@ const DriverOTP = require('../models/DriverOTP');
 const Booking = require('../models/BookingModel');
 const AppVersion = require('../models/AppVersion');
 
-
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
   try {
@@ -91,6 +90,39 @@ router.post('/verify-otp', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to verify OTP' });
+  }
+});
+
+// GET /drivers/appversions - Get Driver App Update Info
+router.get('/appversions', async (req, res) => {
+  try {
+    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (!versionInfo) {
+      return res.status(404).json({
+        success: false,
+        message: 'No version information found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        latestVersion: versionInfo.latestVersion,
+        minRequiredVersion: versionInfo.minRequiredVersion,
+        forceUpdate: versionInfo.forceUpdate,
+        updateMessage: versionInfo.updateMessage,
+        updateUrl: {
+          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
+          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch app version info'
+    });
   }
 });
 
@@ -310,360 +342,6 @@ router.post('/:driverId/location', async (req, res) => {
     });
     
     res.json({ success: true, message: 'Location updated' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/appversions - Get Driver App Update Info
-router.get('/appversions', async (req, res) => {
-  try {
-    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
-    
-    if (!versionInfo) {
-      return res.status(404).json({
-        success: false,
-        message: 'No version information found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        latestVersion: versionInfo.latestVersion,
-        minRequiredVersion: versionInfo.minRequiredVersion,
-        forceUpdate: versionInfo.forceUpdate,
-        updateMessage: versionInfo.updateMessage,
-        updateUrl: {
-          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
-          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
-        }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch app version info'
-    });
-  }
-});
-
-module.exports = router;  res.json({ success: true, message: 'Location updated' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/appversions - Get Driver App Update Info
-router.get('/appversions', async (req, res) => {
-  try {
-    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
-    
-    if (!versionInfo) {
-      return res.status(404).json({
-        success: false,
-        message: 'No version information found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        latestVersion: versionInfo.latestVersion,
-        minRequiredVersion: versionInfo.minRequiredVersion,
-        forceUpdate: versionInfo.forceUpdate,
-        updateMessage: versionInfo.updateMessage,
-        updateUrl: {
-          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
-          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
-        }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch app version info'
-    });
-  }
-});
-
-module.exports = router;  res.json({ success: true, message: 'Location updated' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /driver-appversions - Get Driver App Update Info (Primary)
-router.get('/appversions', async (req, res) => {
-  try {
-    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
-    
-    if (!versionInfo) {
-      return res.status(404).json({
-        success: false,
-        message: 'No version information found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        latestVersion: versionInfo.latestVersion,
-        minRequiredVersion: versionInfo.minRequiredVersion,
-        forceUpdate: versionInfo.forceUpdate,
-        updateMessage: versionInfo.updateMessage,
-        updateUrl: {
-          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
-          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
-        }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch app version info'
-    });
-  }
-});ed' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/:driverId/earnings - Get driver total earnings and trip history
-router.get('/:driverId/earnings', async (req, res) => {
-  try {
-    const { driverId } = req.params;
-    
-    const trips = await Booking.find({ 
-      driverId, 
-      status: 'completed' 
-    })
-    .select('source destination distance totalPrice driverAmount payment.method completedAt createdAt')
-    .sort({ completedAt: -1 });
-    
-    const totalEarnings = trips.reduce((sum, trip) => sum + (trip.driverAmount || 0), 0);
-    
-    const tripHistory = trips.map(trip => ({
-      tripId: trip._id,
-      from: trip.source?.name || trip.source?.address,
-      to: trip.destination?.name || trip.destination?.address,
-      distance: trip.distance,
-      totalFare: trip.totalPrice,
-      driverEarning: trip.driverAmount,
-      paymentMethod: trip.payment?.method,
-      completedAt: trip.completedAt,
-      bookedAt: trip.createdAt
-    }));
-    
-    res.json({ 
-      success: true, 
-      data: {
-        totalEarnings,
-        totalTrips: trips.length,
-        tripHistory
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/:driverId/available-trips - Get available trips
-router.get('/:driverId/available-trips', async (req, res) => {
-  try {
-    const trips = await Booking.find({ 
-      status: 'pending',
-      $or: [
-        { driverId: { $exists: false } },
-        { driverId: null }
-      ]
-    }).sort({ createdAt: -1 }).limit(20);
-    
-    res.json({ success: true, data: trips });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/:driverId/bookings - Get driver bookings with filters
-router.get('/:driverId/bookings', async (req, res) => {
-  try {
-    const { status, type } = req.query;
-    const filter = { driverId: req.params.driverId };
-    
-    if (status) filter.status = status;
-    if (type) filter.type = type;
-    
-    const bookings = await Booking.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/:driverId/active-bookings - Get active bookings
-router.get('/:driverId/active-bookings', async (req, res) => {
-  try {
-    const bookings = await Booking.find({ 
-      driverId: req.params.driverId,
-      status: { $in: ['accepted', 'in_progress', 'started'] }
-    }).sort({ createdAt: -1 });
-    
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// GET /drivers/:driverId/active-booking - Check if driver has active booking
-router.get('/:driverId/active-booking', async (req, res) => {
-  try {
-    const { driverId } = req.params;
-
-    const activeBooking = await Booking.findOne({
-      driverId: driverId,
-      status: { $in: ['accepted', 'confirmed', 'started'] }
-    });
-
-    res.json({
-      success: true,
-      hasActiveBooking: !!activeBooking,
-      activeBooking: activeBooking || null
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check active booking',
-      error: error.message
-    });
-  }
-});
-
-// GET /drivers/:driverId/trips - Get trip history
-router.get('/:driverId/trips', async (req, res) => {
-  try {
-    const { status } = req.query;
-    const query = { driverId: req.params.driverId };
-    if (status) query.status = status;
-    
-    const trips = await Booking.find(query).sort({ createdAt: -1 });
-    res.json({ success: true, data: trips });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// POST /drivers/:driverId/accept-trip - Accept a trip
-router.post('/:driverId/accept-trip', async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { driverId: req.params.driverId, status: 'accepted' },
-      { new: true }
-    );
-    
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-    
-    res.json({ success: true, data: booking });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PUT /drivers/:id/approve - Approve driver
-router.put('/:id/approve', async (req, res) => {
-  try {
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.id,
-      { status: 'approved' },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PATCH /drivers/:id/status - Update driver status
-router.patch('/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// POST /drivers/:driverId/status - Update driver status
-router.post('/:driverId/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const driver = await Driver.findByIdAndUpdate(
-      req.params.driverId,
-      { status },
-      { new: true }
-    );
-    
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    
-    res.json({ success: true, data: { driver } });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update status' });
-  }
-});
-
-// PUT /drivers/:driverId/work-locations - Update work locations
-router.put('/:driverId/work-locations', async (req, res) => {
-  try {
-    const { driverId } = req.params;
-    const { workLocations } = req.body;
-
-    const driver = await Driver.findByIdAndUpdate(
-      driverId,
-      { workLocations },
-      { new: true }
-    );
-
-    if (!driver) {
-      return res.status(404).json({ success: false, error: 'Driver not found' });
-    }
-
-    res.json({ success: true, data: driver });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// GET /drivers/:driverId - Get driver by ID (MUST BE LAST)
-router.get('/:driverId', async (req, res) => {
-  try {
-    const driver = await Driver.findById(req.params.driverId);
-    if (!driver) {
-      return res.status(404).json({ success: false, message: 'Driver not found' });
-    }
-    res.json({ success: true, data: driver });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
