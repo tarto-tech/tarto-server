@@ -310,6 +310,51 @@ router.post('/:driverId/location', async (req, res) => {
     
     res.json({ success: true, message: 'Location updated' });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/:driverId/earnings - Get driver total earnings and trip history
+router.get('/:driverId/earnings', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    const trips = await Booking.find({ 
+      driverId, 
+      status: 'completed' 
+    })
+    .select('source destination distance totalPrice driverAmount payment.method completedAt createdAt')
+    .sort({ completedAt: -1 });
+    
+    const totalEarnings = trips.reduce((sum, trip) => sum + (trip.driverAmount || 0), 0);
+    
+    const tripHistory = trips.map(trip => ({
+      tripId: trip._id,
+      from: trip.source?.name || trip.source?.address,
+      to: trip.destination?.name || trip.destination?.address,
+      distance: trip.distance,
+      totalFare: trip.totalPrice,
+      driverEarning: trip.driverAmount,
+      paymentMethod: trip.payment?.method,
+      completedAt: trip.completedAt,
+      bookedAt: trip.createdAt
+    }));
+    
+    res.json({ 
+      success: true, 
+      data: {
+        totalEarnings,
+        totalTrips: trips.length,
+        tripHistory
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;ed' });
+  } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update location' });
   }
 });
