@@ -93,8 +93,8 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// GET /drivers/appversions - Get Driver App Update Info
-router.get('/appversions', async (req, res) => {
+// GET /drivers/driverappversions - Get Driver App Update Info
+router.get('/driverappversions', async (req, res) => {
   try {
     const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
     
@@ -122,6 +122,47 @@ router.get('/appversions', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch app version info'
+    });
+  }
+});
+
+// POST /drivers/driverappversions - Update Driver App Version Info
+router.post('/driverappversions', async (req, res) => {
+  try {
+    const { latestVersion, minRequiredVersion, forceUpdate, updateMessage, updateUrl } = req.body;
+    
+    if (!latestVersion || !minRequiredVersion) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latest version and minimum required version are required'
+      });
+    }
+
+    const versionData = {
+      latestVersion,
+      minRequiredVersion,
+      forceUpdate: forceUpdate || false,
+      updateMessage: updateMessage || 'New version available',
+      updateUrl: {
+        android: updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
+        ios: updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
+      }
+    };
+
+    const updatedVersion = await AppVersion.findOneAndUpdate(
+      {},
+      versionData,
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      data: updatedVersion
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update app version info'
     });
   }
 });
