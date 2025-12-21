@@ -3,6 +3,7 @@ const router = express.Router();
 const Driver = require('../models/Driver');
 const DriverOTP = require('../models/DriverOTP');
 const Booking = require('../models/BookingModel');
+const AppVersion = require('../models/AppVersion');
 
 
 // POST /drivers/login - Generate OTP
@@ -309,6 +310,121 @@ router.post('/:driverId/location', async (req, res) => {
     });
     
     res.json({ success: true, message: 'Location updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/appversions - Get Driver App Update Info
+router.get('/appversions', async (req, res) => {
+  try {
+    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (!versionInfo) {
+      return res.status(404).json({
+        success: false,
+        message: 'No version information found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        latestVersion: versionInfo.latestVersion,
+        minRequiredVersion: versionInfo.minRequiredVersion,
+        forceUpdate: versionInfo.forceUpdate,
+        updateMessage: versionInfo.updateMessage,
+        updateUrl: {
+          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
+          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch app version info'
+    });
+  }
+});
+
+module.exports = router;  res.json({ success: true, message: 'Location updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/appversions - Get Driver App Update Info
+router.get('/appversions', async (req, res) => {
+  try {
+    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (!versionInfo) {
+      return res.status(404).json({
+        success: false,
+        message: 'No version information found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        latestVersion: versionInfo.latestVersion,
+        minRequiredVersion: versionInfo.minRequiredVersion,
+        forceUpdate: versionInfo.forceUpdate,
+        updateMessage: versionInfo.updateMessage,
+        updateUrl: {
+          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
+          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch app version info'
+    });
+  }
+});
+
+module.exports = router;  res.json({ success: true, message: 'Location updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /driver-appversions - Get Driver App Update Info (Primary)
+router.get('/appversions', async (req, res) => {
+  try {
+    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (!versionInfo) {
+      return res.status(404).json({
+        success: false,
+        message: 'No version information found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        latestVersion: versionInfo.latestVersion,
+        minRequiredVersion: versionInfo.minRequiredVersion,
+        forceUpdate: versionInfo.forceUpdate,
+        updateMessage: versionInfo.updateMessage,
+        updateUrl: {
+          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
+          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch app version info'
+    });
+  }
+});ed' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
