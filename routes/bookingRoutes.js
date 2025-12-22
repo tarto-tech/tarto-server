@@ -281,41 +281,17 @@ router.get('/driver/:driverId', async (req, res) => {
     
     const regularBookings = await Booking.find({ driverId }).sort({ createdAt: -1 });
     
-    const bookings = [
-      ...airportBookings.map(b => ({
-        id: b._id,
-        type: 'airport',
-        pickup: b.pickupLocation?.name || b.source,
-        drop: b.dropLocation?.name || b.destination,
-        date: b.scheduledDate,
-        time: b.scheduledTime,
-        status: b.status,
-        amount: b.driverAmount || b.totalPrice,
-        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
-      })),
-      ...rentalBookings.map(b => ({
-        id: b._id,
-        type: 'rental',
-        pickup: b.pickupLocation?.name,
-        drop: 'Rental',
-        date: b.scheduledDate,
-        time: b.scheduledTime,
-        status: b.status,
-        amount: b.driverAmount || b.totalPrice,
-        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
-      })),
-      ...regularBookings.map(b => ({
-        id: b._id,
-        type: b.type,
-        pickup: b.source?.name || b.source?.address,
-        drop: b.destination?.name || b.destination?.address,
-        date: b.pickupDate,
-        time: b.pickupTime,
-        status: b.status,
-        amount: b.driverAmount || b.totalPrice,
-        customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
-      }))
-    ];
+    const bookings = regularBookings.map(b => ({
+      id: b._id,
+      type: b.type,
+      pickup: b.source?.name || b.source?.address,
+      drop: b.destination?.name || b.destination?.address,
+      date: b.pickupDate,
+      time: b.pickupTime,
+      status: b.status,
+      amount: b.driverAmount || b.totalPrice,
+      customer: { name: b.userName || 'Customer', phone: b.userPhone || '' }
+    }));
     
     res.json(bookings);
   } catch (error) {
@@ -728,9 +704,7 @@ router.post('/:bookingId/reject', async (req, res) => {
     const { bookingId } = req.params;
     const { driverId } = req.body;
     
-    let booking = await AirportBooking.findById(bookingId);
-    if (!booking) booking = await RentalBooking.findById(bookingId);
-    if (!booking) booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId);
     
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });

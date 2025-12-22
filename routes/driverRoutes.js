@@ -473,4 +473,49 @@ router.get('/:driverId/bookings/history', async (req, res) => {
   }
 });
 
+// PATCH /drivers/:driverId/earnings - Update earnings
+router.patch('/:driverId/earnings', async (req, res) => {
+  try {
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.driverId,
+      { $inc: { totalEarnings: req.body.amount, totalTrips: 1 } },
+      { new: true }
+    );
+    if (!driver) return res.status(404).json({ success: false, error: 'Driver not found' });
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /drivers/:driverId/trips - Add trip to history
+router.post('/:driverId/trips', async (req, res) => {
+  try {
+    const earning = new DriverEarning({
+      ...req.body,
+      driverId: req.params.driverId
+    });
+    await earning.save();
+    res.json({ success: true, data: earning });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PATCH /drivers/:driverId/stats - Update trip statistics
+router.patch('/:driverId/stats', async (req, res) => {
+  try {
+    const { totalTrips, totalEarnings, lastTripDate } = req.body;
+    const driver = await Driver.findByIdAndUpdate(
+      req.params.driverId,
+      { totalTrips, totalEarnings, lastActiveAt: lastTripDate },
+      { new: true }
+    );
+    if (!driver) return res.status(404).json({ success: false, error: 'Driver not found' });
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

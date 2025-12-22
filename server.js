@@ -66,7 +66,6 @@ const driverRoutes = require('./routes/driverRoutes');
 
 const proxyRoutes = require('./routes/proxyRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
-// const resortBookingRoutes = require('./routes/resortBookingRoutes');
 
 // Routes
 app.use('/api/maps', mapsRoutes);
@@ -180,72 +179,7 @@ app.put('/api/bookings/:bookingId', async (req, res) => {
   }
 });
 
-// Outstation booking endpoints
-const outstationBookingSchema = new mongoose.Schema({
-  userId: String,
-  userName: String,
-  userPhone: String,
-  type: { type: String, default: 'outstation' },
-  tripType: String,
-  source: String,
-  destination: String,
-  vehicleId: String,
-  vehicleType: String,
-  totalPrice: Number,
-  distance: Number,
-  scheduledDate: String,
-  scheduledTime: String,
-  returnDate: String,
-  returnTime: String,
-  status: { type: String, default: 'pending' },
-  paymentStatus: { type: String, default: 'pending' },
-  pickupLocation: {
-    name: String,
-    latitude: Number,
-    longitude: Number
-  },
-  dropLocation: {
-    name: String,
-    latitude: Number,
-    longitude: Number
-  }
-}, { timestamps: true });
 
-const OutstationBooking = mongoose.models.OutstationBooking || mongoose.model('OutstationBooking', outstationBookingSchema);
-
-// GET outstation bookings
-app.get('/api/bookings', async (req, res) => {
-  try {
-    const { userId, type } = req.query;
-    let query = {};
-    
-    if (userId) query.userId = userId;
-    if (type === 'outstation') query.type = 'outstation';
-    
-    const bookings = await OutstationBooking.find(query).sort({ createdAt: -1 });
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch bookings' });
-  }
-});
-
-// POST create outstation booking
-app.post('/api/bookings', async (req, res) => {
-  try {
-    const booking = new OutstationBooking(req.body);
-    const savedBooking = await booking.save();
-    
-    res.status(201).json({
-      success: true,
-      bookingId: savedBooking._id
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create booking'
-    });
-  }
-});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
