@@ -1,10 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const Driver = require('../models/Driver');
-const Booking = require('../models/BookingModel');
-const DriverAppVersion = require('../models/DriverAppVersion');
-const DriverEarning = require('../models/DriverEarning');
+const Driver = require('../models/Driver.js');
+const Booking = require('../models/BookingModel.js');
+const DriverAppVersion = require('../models/DriverAppVersion.js');
+const DriverEarning = require('../models/DriverEarning.js');
 
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
