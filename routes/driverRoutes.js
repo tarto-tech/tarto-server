@@ -1,8 +1,10 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Driver = require('../models/Driver');
 const Booking = require('../models/BookingModel');
-const AppVersion = require('../models/AppVersion');
+const DriverAppVersion = require('../models/DriverAppVersion');
+const DriverEarning = require('../models/DriverEarning');
 
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
@@ -302,6 +304,57 @@ router.post('/:driverId/location', async (req, res) => {
     });
     
     res.json({ success: true, message: 'Location updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/app-version - Get current app version for driver app
+router.get('/app-version', async (req, res) => {
+  try {
+    const version = await DriverAppVersion.findOne().sort({ createdAt: -1 });
+    if (!version) {
+      return res.status(404).json({ success: false, message: 'App version not found' });
+    }
+    res.json({ success: true, data: version });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/:driverId/earnings - Get driver earnings
+router.get('/:driverId/earnings', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, earningType } = req.query;
+    const filter = { driverId: req.params.driverId };
+    
+    if (status) filter.status = status;
+    if (earningType) filter.earningType = earningType;
+    
+    const earnings = await DriverEarning.find(filter)
+      .populate('bookingId', 'bookingId tripType status')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await DriverEarning.countDocuments(filter);
+    const totalEarnings = await DriverEarning.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        earnings,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        pagination: {
+          current: page,
+          pages: Math.ceil(total / limit),
+          total
+        }
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
