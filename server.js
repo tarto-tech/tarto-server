@@ -92,6 +92,15 @@ try {
   console.warn('App version routes not loaded:', error.message);
 }
 
+// Driver app version routes
+try {
+  const driverAppVersionRoutes = require('./routes/driverAppVersionRoutes');
+  app.use('/api', driverAppVersionRoutes);
+  console.log('Driver app version routes loaded successfully');
+} catch (error) {
+  console.warn('Driver app version routes not loaded:', error.message);
+}
+
 
 
 // Booking update endpoints
