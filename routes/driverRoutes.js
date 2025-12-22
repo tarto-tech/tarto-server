@@ -324,4 +324,42 @@ router.get('/app-version', async (req, res) => {
 
 
 
+// GET /drivers/:driverId/earnings - Get driver earnings
+router.get('/:driverId/earnings', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, earningType } = req.query;
+    const filter = { driverId: req.params.driverId };
+    
+    if (status) filter.status = status;
+    if (earningType) filter.earningType = earningType;
+    
+    const earnings = await DriverEarning.find(filter)
+      .populate('bookingId', 'bookingId tripType status')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await DriverEarning.countDocuments(filter);
+    const totalEarnings = await DriverEarning.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        earnings,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        pagination: {
+          current: page,
+          pages: Math.ceil(total / limit),
+          total
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
