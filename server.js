@@ -288,7 +288,7 @@ app.get('/api/driver-appversions', async (req, res) => {
 // POST driver app versions endpoint
 app.post('/api/driver-update-info', async (req, res) => {
   try {
-    const AppVersion = require('./models/AppVersion');
+    const DriverAppVersion = require('./models/DriverAppVersion');
     const { latestVersion, minRequiredVersion, forceUpdate, updateMessage, updateUrl } = req.body;
     
     if (!latestVersion || !minRequiredVersion) {
@@ -309,7 +309,7 @@ app.post('/api/driver-update-info', async (req, res) => {
       }
     };
 
-    const updatedVersion = await AppVersion.findOneAndUpdate(
+    const updatedVersion = await DriverAppVersion.findOneAndUpdate(
       {},
       versionData,
       { upsert: true, new: true }
@@ -332,8 +332,8 @@ app.post('/api/driver-update-info', async (req, res) => {
 // GET - Fetch driver app version
 app.get('/api/driver-update-info', async (req, res) => {
   try {
-    const AppVersion = require('./models/AppVersion');
-    const driverVersion = await AppVersion.findOne({});
+    const DriverAppVersion = require('./models/DriverAppVersion');
+    const driverVersion = await DriverAppVersion.findOne({});
     
     if (!driverVersion) {
       return res.json({
@@ -360,10 +360,10 @@ app.get('/api/driver-update-info', async (req, res) => {
 // PUT - Update driver app version
 app.put('/api/driver-update-info', async (req, res) => {
   try {
-    const AppVersion = require('./models/AppVersion');
+    const DriverAppVersion = require('./models/DriverAppVersion');
     const updateData = req.body;
     
-    const updatedVersion = await AppVersion.findOneAndUpdate({}, updateData, { new: true });
+    const updatedVersion = await DriverAppVersion.findOneAndUpdate({}, updateData, { new: true });
 
     if (!updatedVersion) {
       return res.status(404).json({ success: false, message: 'Driver app version not found' });
@@ -378,10 +378,10 @@ app.put('/api/driver-update-info', async (req, res) => {
 // PATCH - Partially update driver app version
 app.patch('/api/driver-update-info', async (req, res) => {
   try {
-    const AppVersion = require('./models/AppVersion');
+    const DriverAppVersion = require('./models/DriverAppVersion');
     const updateData = req.body;
     
-    const updatedVersion = await AppVersion.findOneAndUpdate({}, updateData, { new: true });
+    const updatedVersion = await DriverAppVersion.findOneAndUpdate({}, updateData, { new: true });
 
     if (!updatedVersion) {
       return res.status(404).json({ success: false, message: 'Driver app version not found' });
@@ -396,9 +396,9 @@ app.patch('/api/driver-update-info', async (req, res) => {
 // DELETE - Remove driver app version
 app.delete('/api/driver-update-info', async (req, res) => {
   try {
-    const AppVersion = require('./models/AppVersion');
+    const DriverAppVersion = require('./models/DriverAppVersion');
     
-    const deletedVersion = await AppVersion.findOneAndDelete({});
+    const deletedVersion = await DriverAppVersion.findOneAndDelete({});
     
     if (!deletedVersion) {
       return res.status(404).json({ success: false, message: 'Driver app version not found' });
