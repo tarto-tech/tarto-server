@@ -329,6 +329,87 @@ app.post('/api/driver-update-info', async (req, res) => {
   }
 });
 
+// GET - Fetch driver app version
+app.get('/api/driver-update-info', async (req, res) => {
+  try {
+    const AppVersion = require('./models/AppVersion');
+    const driverVersion = await AppVersion.findOne({});
+    
+    if (!driverVersion) {
+      return res.json({
+        success: true,
+        data: {
+          latestVersion: "1.0.0",
+          minRequiredVersion: "1.0.0",
+          forceUpdate: false,
+          updateMessage: "Driver app available",
+          updateUrl: {
+            android: "https://play.google.com/store/apps/details?id=com.tarto.driver",
+            ios: "https://apps.apple.com/app/tarto-driver/id123456789"
+          }
+        }
+      });
+    }
+
+    res.json({ success: true, data: driverVersion });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch driver app version' });
+  }
+});
+
+// PUT - Update driver app version
+app.put('/api/driver-update-info', async (req, res) => {
+  try {
+    const AppVersion = require('./models/AppVersion');
+    const updateData = req.body;
+    
+    const updatedVersion = await AppVersion.findOneAndUpdate({}, updateData, { new: true });
+
+    if (!updatedVersion) {
+      return res.status(404).json({ success: false, message: 'Driver app version not found' });
+    }
+
+    res.json({ success: true, data: updatedVersion });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update driver app version' });
+  }
+});
+
+// PATCH - Partially update driver app version
+app.patch('/api/driver-update-info', async (req, res) => {
+  try {
+    const AppVersion = require('./models/AppVersion');
+    const updateData = req.body;
+    
+    const updatedVersion = await AppVersion.findOneAndUpdate({}, updateData, { new: true });
+
+    if (!updatedVersion) {
+      return res.status(404).json({ success: false, message: 'Driver app version not found' });
+    }
+
+    res.json({ success: true, data: updatedVersion });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to patch driver app version' });
+  }
+});
+
+// DELETE - Remove driver app version
+app.delete('/api/driver-update-info', async (req, res) => {
+  try {
+    const AppVersion = require('./models/AppVersion');
+    
+    const deletedVersion = await AppVersion.findOneAndDelete({});
+    
+    if (!deletedVersion) {
+      return res.status(404).json({ success: false, message: 'Driver app version not found' });
+    }
+
+    res.json({ success: true, message: 'Driver app version deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete driver app version' });
+  }
+});
+
 
 
 
