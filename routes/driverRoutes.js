@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Driver = require('../models/Driver');
-const DriverOTP = require('../models/DriverOTP');
 const Booking = require('../models/BookingModel');
 const AppVersion = require('../models/AppVersion');
 
@@ -17,15 +16,10 @@ router.post('/login', async (req, res) => {
     // Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     
-    // Delete any existing OTP for this phone
-    await DriverOTP.deleteMany({ phone });
+    
     
     // Store OTP in database (expires in 10 minutes)
-    await DriverOTP.create({
-      phone,
-      otp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-    });
+  
     
     console.log(`OTP for ${phone}: ${otp}`);
     
@@ -45,14 +39,12 @@ router.post('/verify-otp', async (req, res) => {
     }
     
     // Find OTP in database
-    const otpRecord = await DriverOTP.findOne({ phone, otp });
     
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
     
     if (otpRecord.expiresAt < new Date()) {
-      await DriverOTP.deleteOne({ _id: otpRecord._id });
       return res.status(400).json({ success: false, message: 'OTP expired' });
     }
     
@@ -65,7 +57,6 @@ router.post('/verify-otp', async (req, res) => {
     }
     
     // Delete used OTP
-    await DriverOTP.deleteOne({ _id: otpRecord._id });
     
     // Generate token
     const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
