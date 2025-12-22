@@ -9,7 +9,8 @@ const appVersionSchema = new mongoose.Schema({
   forceUpdate: Boolean,
   updateMessage: String,
   updateUrl: {
-    android: String
+    android: String,
+    ios: String
   }
 }, { timestamps: true });
 
@@ -25,7 +26,8 @@ async function initializeDefaultVersion() {
       forceUpdate: false,
       updateMessage: "New features and bug fixes available. Please update to the latest version.",
       updateUrl: {
-        android: "https://play.google.com/store/apps/details?id=com.tarto.tech"
+        android: "https://play.google.com/store/apps/details?id=com.tarto.tech",
+        ios: "https://apps.apple.com/app/tarto/id123456789"
       }
     });
     await defaultVersion.save();
@@ -97,6 +99,54 @@ router.post('/update-info', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update version info',
+      error: error.message
+    });
+  }
+});
+
+// PATCH endpoint
+router.patch('/update-info', async (req, res) => {
+  try {
+    const latestVersion = await AppVersion.findOne().sort({ createdAt: -1 });
+    
+    if (!latestVersion) {
+      return res.status(404).json({
+        success: false,
+        message: 'No version info found to update'
+      });
+    }
+    
+    Object.assign(latestVersion, req.body);
+    await latestVersion.save();
+    
+    res.json({
+      success: true,
+      message: 'Update info partially updated successfully',
+      data: latestVersion
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to patch version info',
+      error: error.message
+    });
+  }
+});
+
+// DELETE endpoint
+router.delete('/update-info', async (req, res) => {
+  try {
+    const result = await AppVersion.deleteMany({});
+    
+    res.json({
+      success: true,
+      message: `Deleted ${result.deletedCount} version records`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete version info',
       error: error.message
     });
   }

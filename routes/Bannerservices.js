@@ -12,4 +12,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+// POST create new service banner
+router.post('/', async (req, res) => {
+  try {
+    const { title, imageUrl } = req.body;
+    
+    if (!title || !imageUrl) {
+      return res.status(400).json({ success: false, message: 'Title and imageUrl are required' });
+    }
+    
+    const service = new BannerService({ title, imageUrl });
+    const savedService = await service.save();
+    
+    res.status(201).json({ success: true, data: savedService });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

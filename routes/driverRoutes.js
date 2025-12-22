@@ -93,38 +93,7 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// GET /drivers/driverappversions - Get Driver App Update Info
-router.get('/driverappversions', async (req, res) => {
-  try {
-    const versionInfo = await AppVersion.findOne().sort({ createdAt: -1 });
-    
-    if (!versionInfo) {
-      return res.status(404).json({
-        success: false,
-        message: 'No version information found'
-      });
-    }
 
-    res.json({
-      success: true,
-      data: {
-        latestVersion: versionInfo.latestVersion,
-        minRequiredVersion: versionInfo.minRequiredVersion,
-        forceUpdate: versionInfo.forceUpdate,
-        updateMessage: versionInfo.updateMessage,
-        updateUrl: {
-          android: versionInfo.updateUrl?.android || "https://play.google.com/store/apps/details?id=com.tarto.driver",
-          ios: versionInfo.updateUrl?.ios || "https://apps.apple.com/app/tarto-driver/id123456789"
-        }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch app version info'
-    });
-  }
-});
 
 // POST /drivers/driverappversions - Update Driver App Version Info
 router.post('/driverappversions', async (req, res) => {
