@@ -327,14 +327,36 @@ router.get('/app-version', async (req, res) => {
 // GET /drivers/:driverId/earnings - Get driver earnings
 router.get('/:driverId/earnings', async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, earningType } = req.query;
+    const { page = 1, limit = 10, status, earningType, period } = req.query;
     const filter = { driverId: req.params.driverId };
     
     if (status) filter.status = status;
     if (earningType) filter.earningType = earningType;
     
+    // Add period filter
+    if (period) {
+      const now = new Date();
+      let startDate;
+      
+      switch (period) {
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+      }
+      
+      if (startDate) {
+        filter.createdAt = { $gte: startDate };
+      }
+    }
+    
     const earnings = await DriverEarning.find(filter)
-      .populate('bookingId', 'bookingId tripType status')
+      .populate('bookingId', 'bookingId tripType status from to distance totalFare paymentMethod completedAt createdAt')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -345,16 +367,105 @@ router.get('/:driverId/earnings', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
     
+    // Format trip history
+    const tripHistory = earnings.map(earning => ({
+      tripId: earning.bookingId?._id || earning._id,
+      from: earning.bookingId?.from || 'N/A',
+      to: earning.bookingId?.to || 'N/A',
+      distance: earning.bookingId?.distance || 0,
+      totalFare: earning.bookingId?.totalFare || earning.amount,
+      driverEarning: earning.amount,
+      paymentMethod: earning.bookingId?.paymentMethod || 'cash',
+      completedAt: earning.bookingId?.completedAt || earning.createdAt,
+      bookedAt: earning.bookingId?.createdAt || earning.createdAt
+    }));
+    
     res.json({ 
       success: true, 
       data: {
-        earnings,
         totalEarnings: totalEarnings[0]?.total || 0,
+        totalTrips: total,
+        tripHistory,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
           total
         }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/:driverId/stats - Get driver stats/analytics
+router.get('/:driverId/stats', async (req, res) => {
+  try {
+    const driver = await Driver.findById(req.params.driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    // Get total earnings from DriverEarning collection
+    const earningsStats = await DriverEarning.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
+      { $group: { _id: null, totalEarnings: { $sum: '$amount' }, totalTrips: { $sum: 1 } } }
+    ]);
+    
+    // Get total distance from bookings
+    const distanceStats = await Booking.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
+      { $group: { _id: null, totalDistance: { $sum: '$distance' } } }
+    ]);
+    
+    const stats = earningsStats[0] || { totalEarnings: 0, totalTrips: 0 };
+    const distance = distanceStats[0] || { totalDistance: 0 };
+    
+    res.json({
+      success: true,
+      data: {
+        totalTrips: stats.totalTrips,
+        totalEarnings: stats.totalEarnings,
+        averageRating: driver.rating || 0,
+        totalDistance: distance.totalDistance,
+        onlineHours: driver.onlineHours || 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /drivers/:driverId/bookings/history - Get driver booking history
+router.get('/:driverId/bookings/history', async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const filter = { driverId: req.params.driverId };
+    
+    const bookings = await Booking.find(filter)
+      .select('bookingId from to fare driverEarning status completedAt')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const totalCount = await Booking.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    res.json({
+      success: true,
+      data: {
+        bookings: bookings.map(booking => ({
+          bookingId: booking.bookingId || booking._id,
+          from: booking.from,
+          to: booking.to,
+          fare: booking.fare,
+          driverEarning: booking.driverEarning,
+          status: booking.status,
+          completedAt: booking.completedAt
+        })),
+        totalCount,
+        currentPage: parseInt(page),
+        totalPages
       }
     });
   } catch (error) {
