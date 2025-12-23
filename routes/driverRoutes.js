@@ -4,7 +4,7 @@ const router = express.Router();
 const Driver = require('../models/Driver.js');
 const Booking = require('../models/BookingModel.js');
 const DriverAppVersion = require('../models/DriverAppVersion.js');
-const DriverEarning = require('../models/DriverEarning.js');
+const DriverEarning = require('../models/DriverEarning');
 
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {
