@@ -502,6 +502,44 @@ router.post('/:driverId/trips', async (req, res) => {
   }
 });
 
+// POST /drivers/:driverId/complete-trip - Optimized trip completion with transaction
+router.post('/:driverId/complete-trip', async (req, res) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      const { tripData } = req.body;
+      const driverId = req.params.driverId;
+      
+      // Create earning record
+      const earning = new DriverEarning({
+        ...tripData,
+        driverId
+      });
+      await earning.save({ session });
+      
+      // Update driver stats atomically
+      await Driver.findByIdAndUpdate(
+        driverId,
+        {
+          $inc: { 
+            totalTrips: 1, 
+            totalEarnings: tripData.driverEarning 
+          },
+          lastTripDate: new Date()
+        },
+        { session, new: true }
+      );
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  } finally {
+    session.endSession();
+  }
+});
+
 // PATCH /drivers/:driverId/stats - Update trip statistics
 router.patch('/:driverId/stats', async (req, res) => {
   try {
