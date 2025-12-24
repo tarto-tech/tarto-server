@@ -1,10 +1,74 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const Driver = require('../models/Driver.js');
 const Booking = require('../models/BookingModel.js');
 const DriverAppVersion = require('../models/DriverAppVersion.js');
 const DriverEarning = require('../models/DriverEarning');
+
+// POST /drivers/auth/verify-otp - Proper JWT authentication endpoint
+router.post('/auth/verify-otp', async (req, res) => {
+  try {
+    const { phoneNumber, otp, userType } = req.body;
+
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({ success: false, message: 'Phone number and OTP required' });
+    }
+
+    // TODO: Verify OTP with MSG91 or your OTP service
+    // For now, accepting any 4-digit OTP for development
+    if (otp.length !== 4) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    // Check if driver exists
+    const driver = await Driver.findOne({ phone: phoneNumber });
+    
+    if (driver) {
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          driverId: driver._id, 
+          phone: driver.phone,
+          type: 'driver' 
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '30d' }
+      );
+
+      res.json({
+        success: true,
+        data: {
+          driverId: driver._id,
+          token: token,
+          driver: {
+            id: driver._id,
+            name: driver.name,
+            phone: driver.phone,
+            status: driver.status,
+            email: driver.email,
+            vehicleDetails: driver.vehicleDetails,
+            totalTrips: driver.totalTrips,
+            totalEarnings: driver.totalEarnings
+          }
+        }
+      });
+    } else {
+      // Driver not found
+      res.status(404).json({
+        success: false,
+        error: 'Driver not found',
+        message: 'Driver not found with this phone number'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // POST /drivers/login - Generate OTP
 router.post('/login', async (req, res) => {

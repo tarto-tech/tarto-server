@@ -1,71 +1,32 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/userModel');
+const Driver = require('../models/Driver');
 
-const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Access token required' });
-  }
-
-  if (!process.env.JWT_SECRET) {
-    console.error('JWT_SECRET not configured');
-    return res.status(500).json({ success: false, message: 'Server configuration error' });
-  }
-
+// JWT Authentication middleware
+const authenticateDriver = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid token' });
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
     }
 
-    req.user = user;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    if (decoded.type !== 'driver') {
+      return res.status(403).json({ success: false, message: 'Access denied. Invalid token type.' });
+    }
+
+    const driver = await Driver.findById(decoded.driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found.' });
+    }
+
+    req.driver = driver;
+    req.driverId = decoded.driverId;
     next();
   } catch (error) {
-    return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+    res.status(400).json({ success: false, message: 'Invalid token.' });
   }
 };
 
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
-  next();
-};
-
-const verifyOwnership = (model) => {
-  return async (req, res, next) => {
-    try {
-      const resourceId = req.params.bookingId || req.params.id;
-      const resource = await model.findById(resourceId);
-      
-      if (!resource) {
-        return res.status(404).json({ success: false, message: 'Resource not found' });
-      }
-
-      if (resource.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Access denied' });
-      }
-
-      req.resource = resource;
-      next();
-    } catch (error) {
-      return res.status(500).json({ success: false, message: 'Authorization check failed' });
-    }
-  };
-};
-
-const verifyUserAccess = (req, res, next) => {
-  const requestedUserId = req.params.userId;
-  
-  if (requestedUserId !== req.user._id.toString() && req.user.role !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
-  }
-  
-  next();
-};
-
-module.exports = { authenticateToken, requireAdmin, verifyOwnership, verifyUserAccess };
+module.exports = { authenticateDriver };
