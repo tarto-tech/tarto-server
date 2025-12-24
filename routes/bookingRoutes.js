@@ -844,6 +844,33 @@ router.post('/:bookingId/complete', async (req, res) => {
   }
 });
 
+// POST /bookings/:bookingId/cancel - Cancel booking
+router.post('/:bookingId/cancel', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { driverId, reason, cancelledAt } = req.body;
+
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        status: 'cancelled',
+        cancelledAt: cancelledAt || new Date(),
+        cancellationReason: reason,
+        ...(driverId && { cancelledBy: driverId })
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    res.json({ success: true, message: 'Booking cancelled successfully', data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // GET /bookings/:bookingId/completion-otp - Check for completion OTP (Customer polling)
 router.get('/:bookingId/completion-otp', async (req, res) => {
   try {

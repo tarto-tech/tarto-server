@@ -563,4 +563,114 @@ router.patch('/:driverId/stats', async (req, res) => {
   }
 });
 
+// GET /drivers/:driverId/dashboard - Driver dashboard
+router.get('/:driverId/dashboard', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+
+    const driver = await Driver.findById(driverId);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+
+    // Get today's stats
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayEarnings = await DriverEarning.aggregate([
+      { $match: { driverId: new mongoose.Types.ObjectId(driverId), createdAt: { $gte: today } } },
+      { $group: { _id: null, total: { $sum: '$amount' }, trips: { $sum: 1 } } }
+    ]);
+
+    // Get active booking
+    const activeBooking = await Booking.findOne({
+      driverId,
+      status: { $in: ['accepted', 'confirmed', 'started'] }
+    });
+
+    const dashboardData = {
+      driver: {
+        id: driver._id,
+        name: driver.name,
+        phone: driver.phone,
+        status: driver.status,
+        totalTrips: driver.totalTrips || 0,
+        totalEarnings: driver.totalEarnings || 0
+      },
+      today: {
+        earnings: todayEarnings[0]?.total || 0,
+        trips: todayEarnings[0]?.trips || 0
+      },
+      activeBooking: activeBooking || null
+    };
+
+    res.json({ success: true, data: dashboardData });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PATCH /drivers/:driverId/status - Update driver status
+router.patch('/:driverId/status', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { status, timestamp } = req.body;
+
+    const validStatuses = ['active', 'inactive', 'busy', 'offline'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid status. Must be: active, inactive, busy, or offline' 
+      });
+    }
+
+    const driver = await Driver.findByIdAndUpdate(
+      driverId,
+      {
+        status,
+        lastStatusUpdate: timestamp || new Date()
+      },
+      { new: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Driver status updated successfully',
+      data: { status: driver.status, lastStatusUpdate: driver.lastStatusUpdate }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /drivers/check-exists?phone=:phone - Check driver exists by phone
+router.get('/check-exists', async (req, res) => {
+  try {
+    const { phone } = req.query;
+
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number is required' });
+    }
+
+    const driver = await Driver.findOne({ phone });
+
+    res.json({
+      success: true,
+      exists: !!driver,
+      data: driver ? {
+        id: driver._id,
+        name: driver.name,
+        phone: driver.phone,
+        status: driver.status
+      } : null
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
