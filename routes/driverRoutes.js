@@ -503,18 +503,21 @@ router.post('/:driverId/trips', async (req, res) => {
 });
 
 // POST /drivers/:driverId/complete-trip - Optimized trip completion with transaction
+// POST /drivers/:driverId/complete-trip - Optimized trip completion with transaction
 router.post('/:driverId/complete-trip', async (req, res) => {
   const session = await mongoose.startSession();
   
   try {
     await session.withTransaction(async () => {
-      const { tripData } = req.body;
+      const { tripData, endLatitude, endLongitude } = req.body;
       const driverId = req.params.driverId;
       
-      // Create earning record
+      // Create earning record with end coordinates
       const earning = new DriverEarning({
         ...tripData,
-        driverId
+        driverId,
+        ...(endLatitude && { endLatitude }),
+        ...(endLongitude && { endLongitude })
       });
       await earning.save({ session });
       
@@ -526,7 +529,10 @@ router.post('/:driverId/complete-trip', async (req, res) => {
             totalTrips: 1, 
             totalEarnings: tripData.driverEarning 
           },
-          lastTripDate: new Date()
+          lastTripDate: new Date(),
+          ...(endLatitude && endLongitude && { 
+            lastKnownLocation: { lat: endLatitude, lng: endLongitude } 
+          })
         },
         { session, new: true }
       );
@@ -539,6 +545,7 @@ router.post('/:driverId/complete-trip', async (req, res) => {
     session.endSession();
   }
 });
+
 
 // PATCH /drivers/:driverId/stats - Update trip statistics
 router.patch('/:driverId/stats', async (req, res) => {
