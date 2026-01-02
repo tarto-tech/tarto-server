@@ -844,7 +844,7 @@ router.post('/:bookingId/complete', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/cancel - Cancel booking
+// POST /bookings/:bookingId/cancel - Cancel booking and reset to pending
 router.post('/:bookingId/cancel', async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -853,10 +853,11 @@ router.post('/:bookingId/cancel', async (req, res) => {
     const booking = await Booking.findByIdAndUpdate(
       bookingId,
       {
-        status: 'cancelled',
+        status: 'pending',
         cancelledAt: cancelledAt || new Date(),
         cancellationReason: reason,
-        ...(driverId && { cancelledBy: driverId })
+        ...(driverId && { cancelledBy: driverId }),
+        $unset: { driverId: 1, driverName: 1, vehicleName: 1, vehicleNumber: 1, acceptedAt: 1 }
       },
       { new: true }
     );
@@ -865,7 +866,7 @@ router.post('/:bookingId/cancel', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    res.json({ success: true, message: 'Booking cancelled successfully', data: booking });
+    res.json({ success: true, message: 'Booking cancelled and reset to pending', data: booking });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
