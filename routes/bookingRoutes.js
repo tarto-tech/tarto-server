@@ -567,51 +567,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Cancel booking
-router.post('/:id/cancel', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-    
-    const booking = await Booking.findById(id);
-    
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-    
-    if (booking.status === 'completed' || booking.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        message: `Booking already ${booking.status}`
-      });
-    }
-    
-    // Update booking status
-    booking.status = 'cancelled';
-    booking.cancellationReason = reason || 'Cancelled by user';
-    booking.cancelledAt = new Date();
-    
-    await booking.save();
-    
-    // Make vehicle available again
-    await Vehicle.findByIdAndUpdate(booking.vehicleId, { isAvailable: true });
-    
-    res.json({
-      success: true,
-      message: 'Booking cancelled successfully',
-      data: booking
-    });
-  } catch (error) {
-    console.error('Error cancelling booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cancel booking'
-    });
-  }
-});
+
 
 // POST /bookings/:bookingId/accept - Accept booking with single trip validation
 router.post('/:bookingId/accept', async (req, res) => {
