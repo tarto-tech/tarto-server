@@ -287,12 +287,24 @@ router.get('/profile/:driverId', async (req, res) => {
       name: driver.name,
       phone: driver.phone,
       email: driver.email,
+      agencyName: driver.agencyName,
+      panNumber: driver.panNumber,
+      address: driver.address,
+      dateOfBirth: driver.dateOfBirth,
+      licenseNumber: driver.licenseNumber,
+      gender: driver.gender,
       vehicleDetails: driver.vehicleDetails,
       documents: driver.documents,
       status: driver.status,
       rating: driver.rating,
       totalTrips: driver.totalTrips,
-      totalEarnings: driver.totalEarnings
+      totalEarnings: driver.totalEarnings,
+      currentLocation: driver.currentLocation,
+      isOnline: driver.isOnline,
+      isAvailable: driver.isAvailable,
+      workLocations: driver.workLocations,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
