@@ -783,16 +783,50 @@ router.post('/:bookingId/complete', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid OTP' });
     }
     
+    const completedAt = endTime || new Date();
+    
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       {
         status: 'completed',
-        endTime: endTime || new Date(),
-        completedAt: endTime || new Date(),
+        endTime: completedAt,
+        completedAt: completedAt,
         $unset: { completionOTP: 1, otpGeneratedAt: 1 }
       },
       { new: true }
     );
+    
+    // Save to trip history
+    if (booking.driverId) {
+      const DriverEarning = require('../models/DriverEarning');
+      const Driver = require('../models/Driver');
+      
+      const remainingAmount = booking.driverAmount - (booking.payment?.advanceAmount || 0);
+      
+      if (remainingAmount > 0) {
+        await DriverEarning.create({
+          driverId: booking.driverId,
+          bookingId: bookingId,
+          tripType: booking.type || 'outstation',
+          amount: remainingAmount,
+          earningType: 'trip_completion',
+          status: 'completed',
+          transactionDate: completedAt,
+          tripDetails: {
+            source: booking.source?.name || booking.source?.address,
+            destination: booking.destination?.name || booking.destination?.address,
+            stops: booking.stops || [],
+            distance: booking.distance,
+            customerName: booking.userName,
+            vehicleType: booking.vehicleName
+          }
+        });
+        
+        await Driver.findByIdAndUpdate(booking.driverId, {
+          $inc: { totalEarnings: remainingAmount, totalTrips: 1 }
+        });
+      }
+    }
     
     res.json({ success: true, data: updatedBooking, message: 'Trip completed successfully' });
   } catch (error) {

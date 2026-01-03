@@ -446,9 +446,10 @@ router.get('/:driverId/earnings', async (req, res) => {
     // Format trip history
     const tripHistory = earnings.map(earning => ({
       tripId: earning.bookingId?._id || earning._id,
-      from: earning.bookingId?.from || 'N/A',
-      to: earning.bookingId?.to || 'N/A',
-      distance: earning.bookingId?.distance || 0,
+      from: earning.tripDetails?.source || earning.bookingId?.from || 'N/A',
+      to: earning.tripDetails?.destination || earning.bookingId?.to || 'N/A',
+      stops: earning.tripDetails?.stops || [],
+      distance: earning.tripDetails?.distance || earning.bookingId?.distance || 0,
       totalFare: earning.bookingId?.totalFare || earning.amount,
       driverEarning: earning.amount,
       paymentMethod: earning.bookingId?.paymentMethod || 'cash',
