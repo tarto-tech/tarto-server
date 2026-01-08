@@ -3,6 +3,7 @@ const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const Booking = require('../models/BookingModel');
 const User = require('../models/userModel');
+const { sendNotification } = require('../services/notificationService');
 
 
 // Get all bookings (for admin panel)
@@ -637,6 +638,27 @@ router.post('/:bookingId/accept', async (req, res) => {
       },
       { new: true }
     );
+
+    // Send notification to user
+    if (booking.userId) {
+      const user = await User.findById(booking.userId);
+      if (user?.fcmToken) {
+        await sendNotification({
+          to: user.fcmToken,
+          notification: {
+            title: 'Trip Accepted',
+            body: `${driver.name} is on the way`
+          },
+          data: {
+            type: 'trip_accepted',
+            tripId: bookingId,
+            driverId: driverId,
+            driverName: driver.name,
+            vehicleNumber: driver.vehicleDetails?.registrationNumber || ''
+          }
+        });
+      }
+    }
 
     res.json({
       success: true,

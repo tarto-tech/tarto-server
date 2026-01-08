@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date,
     default: Date.now
+  },
+  fcmToken: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true
