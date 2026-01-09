@@ -5,6 +5,29 @@ const Booking = require('../models/BookingModel');
 const User = require('../models/userModel');
 const { sendNotification } = require('../services/notificationService');
 
+// Notification service function for customers
+async function sendNotificationToCustomer({ customerId, type, title, body, data }) {
+  try {
+    // Get customer's FCM token
+    const customer = await User.findById(customerId);
+    if (!customer?.fcmToken) {
+      console.log('No FCM token found for customer:', customerId);
+      return;
+    }
+    
+    // Send FCM notification
+    await sendNotification({
+      to: customer.fcmToken,
+      notification: { title, body },
+      data: { ...data, type }
+    });
+    
+    console.log('Notification sent to customer:', customerId);
+  } catch (error) {
+    console.error('Error sending notification to customer:', error);
+  }
+}
+
 
 // Get all bookings (for admin panel)
 // IMPORTANT: This route must come BEFORE the /:id route
@@ -574,7 +597,7 @@ router.get('/:id', async (req, res) => {
 router.post('/:bookingId/accept', async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { driverId } = req.body;
+    const { driverId, notifyCustomer = true } = req.body;
 
     // Validate required fields
     if (!driverId) {
@@ -624,6 +647,9 @@ router.post('/:bookingId/accept', async (req, res) => {
       });
     }
 
+    // Calculate advance amount (20% of total price)
+    const advanceAmount = Math.round(booking.totalPrice * 0.2);
+
     // Update booking with driver details
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
@@ -633,31 +659,27 @@ router.post('/:bookingId/accept', async (req, res) => {
         driverName: driver.name,
         vehicleName: driver.vehicleDetails?.type || 'Vehicle',
         vehicleNumber: driver.vehicleDetails?.registrationNumber,
+        advanceAmount: advanceAmount,
         acceptedAt: new Date(),
         updatedAt: new Date()
       },
       { new: true }
     );
 
-    // Send notification to user
-    if (booking.userId) {
-      const user = await User.findById(booking.userId);
-      if (user?.fcmToken) {
-        await sendNotification({
-          to: user.fcmToken,
-          notification: {
-            title: 'Trip Accepted',
-            body: `${driver.name} is on the way`
-          },
-          data: {
-            type: 'trip_accepted',
-            tripId: bookingId,
-            driverId: driverId,
-            driverName: driver.name,
-            vehicleNumber: driver.vehicleDetails?.registrationNumber || ''
-          }
-        });
-      }
+    // Send notification to customer if requested
+    if (notifyCustomer && booking.userId) {
+      await sendNotificationToCustomer({
+        customerId: booking.userId,
+        type: 'trip_accepted',
+        title: 'Trip Accepted! 🚗',
+        body: `${driver.name} (${driver.vehicleDetails?.registrationNumber || 'Vehicle'}) accepted your trip. Pay advance ₹${advanceAmount} to confirm.`,
+        data: {
+          trip_id: bookingId,
+          driver_name: driver.name,
+          vehicle_number: driver.vehicleDetails?.registrationNumber || '',
+          advance_amount: advanceAmount.toString()
+        }
+      });
     }
 
     res.json({
@@ -700,6 +722,43 @@ router.post('/:bookingId/reject', async (req, res) => {
   }
 });
 
+// POST /bookings/:bookingId/driver-arrived - Driver arrived at pickup
+router.post('/:bookingId/driver-arrived', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { driverId } = req.body;
+    
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    // Update booking status
+    await Booking.findByIdAndUpdate(bookingId, {
+      status: 'driver_arrived',
+      arrivedAt: new Date()
+    });
+    
+    // Send notification to user
+    if (booking.userId) {
+      await sendNotificationToCustomer({
+        customerId: booking.userId,
+        type: 'driver_arrived',
+        title: 'Driver Arrived 🚗',
+        body: 'Your driver has arrived at pickup location',
+        data: {
+          trip_id: bookingId,
+          driver_id: driverId
+        }
+      });
+    }
+    
+    res.json({ success: true, message: 'Driver arrival notification sent' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /bookings/:bookingId/start - Start trip with advance payment
 router.post('/:bookingId/start', async (req, res) => {
   try {
@@ -717,6 +776,19 @@ router.post('/:bookingId/start', async (req, res) => {
       { status: 'started', startTime: startTime || new Date(), updatedAt: new Date() },
       { new: true }
     );
+    
+    // Send notification to user
+    if (booking.userId) {
+      await sendNotificationToCustomer({
+        customerId: booking.userId,
+        type: 'trip_started',
+        title: 'Trip Started 🚀',
+        body: 'Your journey has begun. Have a safe trip!',
+        data: {
+          trip_id: bookingId
+        }
+      });
+    }
     
     const advanceAmount = booking.payment?.advanceAmount || 0;
     if (advanceAmount > 0) {
