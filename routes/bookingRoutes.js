@@ -42,10 +42,10 @@ async function notifyNearbyDrivers({ bookingId, pickupLocation, dropoffLocation,
     const Driver = require('../models/Driver');
     const admin = require('firebase-admin');
     
-    // Get all active drivers within 30km radius using location (which has 2dsphere index)
+    // Get all active drivers within 30km radius using currentLocation (which has 2dsphere index)
     const nearbyDrivers = await Driver.find({
       status: 'active',
-      location: {
+      currentLocation: {
         $near: {
           $geometry: {
             type: 'Point',
@@ -531,6 +531,51 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// PATCH /bookings/:bookingId - Cancel booking (set to pending, remove driver)
+router.patch('/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (status === 'pending') {
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        bookingId,
+        {
+          status: 'pending',
+          $unset: { driverId: 1, driverName: 1, vehicleName: 1, vehicleNumber: 1, acceptedAt: 1 },
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      return res.json({
+        success: true,
+        message: 'Booking cancelled successfully',
+        data: updatedBooking
+      });
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Booking updated successfully',
+      data: updatedBooking
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // General booking update
 router.put('/:id', async (req, res) => {
   try {
@@ -983,36 +1028,31 @@ router.post('/:bookingId/complete', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/cancel - Cancel booking (delete if pending, update if accepted)
+// POST /bookings/:bookingId/cancel - Cancel booking and reset to pending
 router.post('/:bookingId/cancel', async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { driverId, reason, cancelledAt } = req.body;
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        status: 'pending',
+        cancelledAt: cancelledAt || new Date(),
+        cancellationReason: reason,
+        ...(driverId && { cancelledBy: driverId }),
+        $unset: { driverId: 1, driverName: 1, vehicleName: 1, vehicleNumber: 1, acceptedAt: 1 }
+      },
+      { new: true }
+    );
+
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    // If booking is pending, delete it completely
-    if (booking.status === 'pending') {
-      await Booking.findByIdAndDelete(bookingId);
-      console.log(`Deleted pending booking: ${bookingId}`);
-    } else {
-      // If booking is accepted/in-progress, just update status
-      await Booking.findByIdAndUpdate(bookingId, {
-        status: 'cancelled',
-        cancelledAt: cancelledAt || new Date(),
-        cancellationReason: reason,
-        ...(driverId && { cancelledBy: driverId })
-      });
-      console.log(`Cancelled booking: ${bookingId}`);
-    }
-
-    res.json({ success: true, message: 'Booking cancelled successfully' });
+    res.json({ success: true, message: 'Booking cancelled and reset to pending', data: booking });
   } catch (error) {
-    console.error('Error cancelling booking:', error);
-    res.status(500).json({ success: false, error: 'Failed to cancel booking' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
