@@ -143,7 +143,8 @@ app.get('/api/health', (req, res) => {
     success: true,
     message: 'Server is healthy',
     timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'production'
+    environment: process.env.NODE_ENV || 'production',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 

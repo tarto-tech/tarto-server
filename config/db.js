@@ -3,6 +3,7 @@ const logger = require('./logger');
 
 const connectDB = async () => {
   try {
+    console.log('Attempting MongoDB connection...');
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
@@ -11,8 +12,12 @@ const connectDB = async () => {
 
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
+    console.error('MongoDB connection failed:', error.message);
     logger.error(`MongoDB connection error: ${error.message}`);
-    process.exit(1);
+    // Don't exit in production, let the app start without DB
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   }
 };
 
