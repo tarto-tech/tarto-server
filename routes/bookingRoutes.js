@@ -983,57 +983,77 @@ router.post('/:bookingId/complete', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/cancel - Cancel booking (delete if pending, update if accepted)
+// POST /bookings/:bookingId/cancel - Driver cancels accepted trip, returns to pending for reassignment
 router.post('/:bookingId/cancel', async (req, res) => {
   try {
     const bookingId = req.params.bookingId;
-    console.log(`Attempting to cancel booking: ${bookingId}`);
+    const { driverId, reason } = req.body;
     
-    // Find the booking first
     const booking = await Booking.findById(bookingId);
     
     if (!booking) {
-      console.log(`Booking not found: ${bookingId}`);
       return res.status(404).json({ 
         success: false, 
         error: 'Booking not found' 
       });
     }
     
-    console.log(`Found booking with status: ${booking.status}`);
+    // Reset booking to pending state for reassignment
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId, 
+      {
+        status: 'pending',
+        driverId: null,
+        driverName: null,
+        vehicleNumber: null,
+        advanceAmount: null,
+        acceptedAt: null,
+        cancelledBy: driverId,
+        cancellationReason: reason,
+        cancelledAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
     
-    // If booking is pending, DELETE it completely
-    if (booking.status === 'pending') {
-      const deletedBooking = await Booking.findByIdAndDelete(bookingId);
-      console.log(`DELETED pending booking: ${bookingId}`, deletedBooking ? 'SUCCESS' : 'FAILED');
-      
-      return res.json({ 
-        success: true, 
-        message: 'Pending booking deleted successfully',
-        deleted: true
-      });
-    } 
-    // If booking is accepted/in-progress, just update status
-    else {
-      const updatedBooking = await Booking.findByIdAndUpdate(
-        bookingId, 
-        {
-          status: 'cancelled',
-          cancelledAt: new Date(),
-          ...req.body // Include any additional data like reason, driverId
-        },
-        { new: true }
-      );
-      
-      console.log(`CANCELLED booking: ${bookingId}`, updatedBooking ? 'SUCCESS' : 'FAILED');
-      
-      return res.json({ 
-        success: true, 
-        message: 'Booking cancelled successfully',
-        deleted: false,
-        data: updatedBooking
+    // Notify customer about driver cancellation
+    if (booking.userId) {
+      await sendNotificationToCustomer({
+        customerId: booking.userId,
+        type: 'driver_cancelled',
+        title: 'Driver Cancelled',
+        body: 'Your driver cancelled the trip. We are finding another driver for you.',
+        data: {
+          trip_id: bookingId,
+          status: 'pending'
+        }
       });
     }
+    
+    // Notify nearby drivers about newly available trip
+    if (updatedBooking.source?.location?.coordinates && updatedBooking.destination?.location?.coordinates) {
+      await notifyNearbyDrivers({
+        bookingId: updatedBooking._id,
+        pickupLocation: {
+          latitude: updatedBooking.source.location.coordinates[1],
+          longitude: updatedBooking.source.location.coordinates[0]
+        },
+        dropoffLocation: {
+          latitude: updatedBooking.destination.location.coordinates[1],
+          longitude: updatedBooking.destination.location.coordinates[0]
+        },
+        fare: updatedBooking.totalPrice,
+        distance: updatedBooking.distance,
+        pickupAddress: updatedBooking.source.name || updatedBooking.source.address,
+        dropoffAddress: updatedBooking.destination.name || updatedBooking.destination.address
+      });
+    }
+    
+    return res.json({ 
+      success: true, 
+      message: 'Trip returned to pending for reassignment',
+      data: updatedBooking
+    });
     
   } catch (error) {
     console.error('Error cancelling booking:', error);
