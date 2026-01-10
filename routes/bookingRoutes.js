@@ -531,51 +531,6 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-// PATCH /bookings/:bookingId - Cancel booking (set to pending, remove driver)
-router.patch('/:bookingId', async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { status } = req.body;
-
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    if (status === 'pending') {
-      const updatedBooking = await Booking.findByIdAndUpdate(
-        bookingId,
-        {
-          status: 'pending',
-          $unset: { driverId: 1, driverName: 1, vehicleName: 1, vehicleNumber: 1, acceptedAt: 1 },
-          updatedAt: new Date()
-        },
-        { new: true }
-      );
-
-      return res.json({
-        success: true,
-        message: 'Booking cancelled successfully',
-        data: updatedBooking
-      });
-    }
-
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { status, updatedAt: new Date() },
-      { new: true }
-    );
-
-    res.json({
-      success: true,
-      message: 'Booking updated successfully',
-      data: updatedBooking
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // General booking update
 router.put('/:id', async (req, res) => {
   try {
