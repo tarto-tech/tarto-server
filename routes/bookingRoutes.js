@@ -42,10 +42,10 @@ async function notifyNearbyDrivers({ bookingId, pickupLocation, dropoffLocation,
     const Driver = require('../models/Driver');
     const admin = require('firebase-admin');
     
-    // Get all active drivers within 30km radius using currentLocation (which has 2dsphere index)
+    // Get all active drivers within 30km radius using location (which has 2dsphere index)
     const nearbyDrivers = await Driver.find({
       status: 'active',
-      currentLocation: {
+      location: {
         $near: {
           $geometry: {
             type: 'Point',
@@ -1028,31 +1028,36 @@ router.post('/:bookingId/complete', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/cancel - Cancel booking and reset to pending
+// POST /bookings/:bookingId/cancel - Cancel booking (delete if pending, update if accepted)
 router.post('/:bookingId/cancel', async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { driverId, reason, cancelledAt } = req.body;
 
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      {
-        status: 'pending',
-        cancelledAt: cancelledAt || new Date(),
-        cancellationReason: reason,
-        ...(driverId && { cancelledBy: driverId }),
-        $unset: { driverId: 1, driverName: 1, vehicleName: 1, vehicleNumber: 1, acceptedAt: 1 }
-      },
-      { new: true }
-    );
-
+    const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    res.json({ success: true, message: 'Booking cancelled and reset to pending', data: booking });
+    // If booking is pending, delete it completely
+    if (booking.status === 'pending') {
+      await Booking.findByIdAndDelete(bookingId);
+      console.log(`Deleted pending booking: ${bookingId}`);
+    } else {
+      // If booking is accepted/in-progress, just update status
+      await Booking.findByIdAndUpdate(bookingId, {
+        status: 'cancelled',
+        cancelledAt: cancelledAt || new Date(),
+        cancellationReason: reason,
+        ...(driverId && { cancelledBy: driverId })
+      });
+      console.log(`Cancelled booking: ${bookingId}`);
+    }
+
+    res.json({ success: true, message: 'Booking cancelled successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({ success: false, error: 'Failed to cancel booking' });
   }
 });
 
