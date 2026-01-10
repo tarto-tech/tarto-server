@@ -14,20 +14,12 @@ const { globalErrorHandler, notFound } = require('./middleware/errorHandler');
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+// Initialize Express app first
+const app = express();
 
-// Initialize geospatial indexes after connection
-mongoose.connection.once('open', async () => {
-  logger.info('MongoDB connection established');
-  
-  try {
-    const Driver = require('./models/Driver');
-    await Driver.collection.createIndex({ location: '2dsphere' });
-    logger.info('Geospatial index ensured on Driver.location');
-  } catch (error) {
-    logger.warn('Geospatial index creation warning:', error.message);
-  }
+// Connect to MongoDB (non-blocking)
+connectDB().catch(err => {
+  console.error('MongoDB connection failed, continuing without DB:', err.message);
 });
 
 const app = express();
@@ -164,6 +156,19 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 const server = app.listen(PORT, HOST, () => {
   logger.info(`Server running in ${process.env.NODE_ENV || 'production'} mode on http://${HOST}:${PORT}`);
+  
+  // Initialize geospatial indexes after server starts
+  mongoose.connection.once('open', async () => {
+    logger.info('MongoDB connection established');
+    
+    try {
+      const Driver = require('./models/Driver');
+      await Driver.collection.createIndex({ location: '2dsphere' });
+      logger.info('Geospatial index ensured on Driver.location');
+    } catch (error) {
+      logger.warn('Geospatial index creation warning:', error.message);
+    }
+  });
 });
 
 // Graceful shutdown handlers
