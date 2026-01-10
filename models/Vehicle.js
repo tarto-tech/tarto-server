@@ -18,13 +18,11 @@ const vehicleSchema = new mongoose.Schema({
     enum: ['One Way', 'outstation'],
     default: 'One Way'
   },
-  // Add model field
   model: {
     type: String,
     enum: ['HATCHBACK', 'SEDAN', 'SUV', 'INNOVA', 'ERTIGA', 'CRYSTA', 'BUS'],
     default: 'SEDAN'
   },
-  // Add AC availability field
   hasAC: {
     type: Boolean,
     default: true
@@ -47,7 +45,7 @@ const vehicleSchema = new mongoose.Schema({
       required: true
     },
     coordinates: {
-      type: [Number], // [longitude, latitude]
+      type: [Number],
       required: true
     }
   },
@@ -65,26 +63,21 @@ const vehicleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create a geospatial index on the location field
+// Create geospatial index
 vehicleSchema.index({ location: '2dsphere' });
+vehicleSchema.index({ type: 1 });
+vehicleSchema.index({ isAvailable: 1 });
+vehicleSchema.index({ model: 1 });
 
-// Add pre-save hook to ensure model and hasAC are always set
+// Pre-save hook to ensure defaults
 vehicleSchema.pre('save', function(next) {
-  // Force set model if not present
   if (!this.model) {
     this.model = 'SEDAN';
-    console.log('Setting default model: SEDAN');
   }
-  
-  // Force set hasAC if not present
   if (this.hasAC === undefined) {
     this.hasAC = true;
-    console.log('Setting default hasAC: true');
   }
-  
-  console.log('Saving vehicle with model:', this.model, 'hasAC:', this.hasAC);
   next();
 });
 
-const Vehicle = mongoose.model('Vehicle', vehicleSchema);
-module.exports = Vehicle;
+module.exports = mongoose.model('Vehicle', vehicleSchema);

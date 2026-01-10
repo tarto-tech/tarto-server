@@ -1,10 +1,11 @@
 const axios = require('axios');
+const logger = require('../config/logger');
 
 const MSG91_WIDGET_ID = process.env.MSG91_WIDGET_ID;
 const MSG91_AUTH_TOKEN = process.env.MSG91_AUTH_TOKEN;
 
 if (!MSG91_WIDGET_ID || !MSG91_AUTH_TOKEN) {
-  console.error('MSG91 credentials not configured');
+  logger.warn('MSG91 credentials not configured - OTP service will not work');
 }
 
 const sendOTP = async (phone) => {
@@ -18,9 +19,11 @@ const sendOTP = async (phone) => {
       mobile: phone,
       authkey: MSG91_AUTH_TOKEN
     });
+    
+    logger.info(`OTP sent successfully to ${phone}`);
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('OTP send failed:', error.message);
+    logger.error('OTP send failed:', error.message);
     return { success: false, error: 'Failed to send OTP' };
   }
 };
@@ -36,9 +39,11 @@ const verifyOTP = async (phone, otp) => {
       otp: otp,
       authkey: MSG91_AUTH_TOKEN
     });
+    
+    logger.info(`OTP verified successfully for ${phone}`);
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('OTP verify failed:', error.message);
+    logger.error('OTP verify failed:', error.message);
     return { success: false, error: 'OTP verification failed' };
   }
 };

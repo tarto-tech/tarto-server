@@ -1,1 +1,80 @@
-const winston = require('winston');\nconst path = require('path');\n\nconst logDir = 'logs';\nconst { combine, timestamp, errors, json, printf, colorize } = winston.format;\n\n// Custom format for console output\nconst consoleFormat = printf(({ level, message, timestamp, stack }) => {\n  return `${timestamp} [${level}]: ${stack || message}`;\n});\n\n// Create logs directory if it doesn't exist\nconst fs = require('fs');\nif (!fs.existsSync(logDir)) {\n  fs.mkdirSync(logDir, { recursive: true });\n}\n\nconst logger = winston.createLogger({\n  level: process.env.LOG_LEVEL || 'info',\n  format: combine(\n    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),\n    errors({ stack: true }),\n    json()\n  ),\n  defaultMeta: { service: 'tarto-server' },\n  transports: [\n    // Error log file\n    new winston.transports.File({\n      filename: path.join(logDir, 'error.log'),\n      level: 'error',\n      maxsize: 10485760, // 10MB\n      maxFiles: 5,\n      tailable: true\n    }),\n    \n    // Combined log file\n    new winston.transports.File({\n      filename: path.join(logDir, 'combined.log'),\n      maxsize: 10485760, // 10MB\n      maxFiles: 5,\n      tailable: true\n    }),\n    \n    // Console output for development\n    new winston.transports.Console({\n      format: combine(\n        colorize(),\n        timestamp({ format: 'HH:mm:ss' }),\n        consoleFormat\n      ),\n      silent: process.env.NODE_ENV === 'test'\n    })\n  ],\n  \n  // Handle exceptions and rejections\n  exceptionHandlers: [\n    new winston.transports.File({ \n      filename: path.join(logDir, 'exceptions.log'),\n      maxsize: 10485760,\n      maxFiles: 3\n    })\n  ],\n  \n  rejectionHandlers: [\n    new winston.transports.File({ \n      filename: path.join(logDir, 'rejections.log'),\n      maxsize: 10485760,\n      maxFiles: 3\n    })\n  ]\n});\n\n// Create a stream object for Morgan HTTP logging\nlogger.stream = {\n  write: (message) => {\n    logger.info(message.trim());\n  }\n};\n\nmodule.exports = logger;
+const winston = require('winston');
+const path = require('path');
+
+const logDir = 'logs';
+const { combine, timestamp, errors, json, printf, colorize } = winston.format;
+
+// Custom format for console output
+const consoleFormat = printf(({ level, message, timestamp, stack }) => {
+  return `${timestamp} [${level}]: ${stack || message}`;
+});
+
+// Create logs directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: combine(
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    errors({ stack: true }),
+    json()
+  ),
+  defaultMeta: { service: 'tarto-server' },
+  transports: [
+    // Error log file
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 10485760, // 10MB
+      maxFiles: 5,
+      tailable: true
+    }),
+    
+    // Combined log file
+    new winston.transports.File({
+      filename: path.join(logDir, 'combined.log'),
+      maxsize: 10485760, // 10MB
+      maxFiles: 5,
+      tailable: true
+    }),
+    
+    // Console output for development
+    new winston.transports.Console({
+      format: combine(
+        colorize(),
+        timestamp({ format: 'HH:mm:ss' }),
+        consoleFormat
+      ),
+      silent: process.env.NODE_ENV === 'test'
+    })
+  ],
+  
+  // Handle exceptions and rejections
+  exceptionHandlers: [
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'exceptions.log'),
+      maxsize: 10485760,
+      maxFiles: 3
+    })
+  ],
+  
+  rejectionHandlers: [
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'rejections.log'),
+      maxsize: 10485760,
+      maxFiles: 3
+    })
+  ]
+});
+
+// Create a stream object for Morgan HTTP logging
+logger.stream = {
+  write: (message) => {
+    logger.info(message.trim());
+  }
+};
+
+module.exports = logger;

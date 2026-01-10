@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    unique: true, // ✅ Creates an index automatically
+    unique: true,
     trim: true,
     match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
   },
@@ -59,7 +59,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// ❌ REMOVE this line to prevent duplicate index warning
-// userSchema.index({ phone: 1 });
+// Create indexes for performance
+userSchema.index({ phone: 1 });
+userSchema.index({ email: 1 });
+userSchema.index({ isRegistered: 1 });
 
 module.exports = mongoose.model('User', userSchema);

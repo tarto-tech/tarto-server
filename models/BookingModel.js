@@ -1,6 +1,4 @@
-//BookingModel.js
 const mongoose = require('mongoose');
-const geolib = require('geolib');
 
 const locationSchema = new mongoose.Schema({
   name: String,
@@ -37,7 +35,6 @@ const paymentSchema = new mongoose.Schema({
   paidAt: Date
 }, { _id: false });
 
-
 const bookingSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -53,13 +50,11 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Vehicle',
     required: true
   },
-   
-  
   source: locationSchema,
   destination: locationSchema,
   stops: [locationSchema],
-  distance: { type: Number, required: true }, // in km
-  duration: { type: Number, required: true }, // in minutes
+  distance: { type: Number, required: true },
+  duration: { type: Number, required: true },
   basePrice: { type: Number, required: true },
   serviceCharge: { type: Number, default: 0 },
   driverAmount: { type: Number, default: 0 },
@@ -77,13 +72,12 @@ const bookingSchema = new mongoose.Schema({
   },
   acceptedAt: Date,
   rejectedDrivers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Driver' }],
-  // Add this field to your schema
   type: {
     type: String,
     enum: ['city', 'outstation'],
     required: true
   },
-   pickupDate: {
+  pickupDate: {
     type: Date,
     required: true
   },
@@ -91,9 +85,7 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  returnDate: {
-    type: Date,
-  },
+  returnDate: Date,
   isRoundTrip: { type: Boolean, default: false },
   isOutstationRide: { type: Boolean, default: false },
   userName: String,
@@ -115,7 +107,7 @@ const bookingSchema = new mongoose.Schema({
   otpGeneratedAt: Date
 }, { timestamps: true });
 
-// Add this pre-save hook to set the type based on distance if not provided
+// Pre-save hook to set type based on distance
 bookingSchema.pre('save', function(next) {
   if (!this.type) {
     this.type = this.distance > 100 ? 'outstation' : 'city';
@@ -123,8 +115,7 @@ bookingSchema.pre('save', function(next) {
   next();
 });
 
-
-// Validation: returnDate required for round trips
+// Validation for round trips
 bookingSchema.pre('save', function(next) {
   if (this.isRoundTrip && !this.returnDate) {
     return next(new Error('Return date is required for round trip bookings'));
@@ -135,6 +126,13 @@ bookingSchema.pre('save', function(next) {
   next();
 });
 
-const Booking = mongoose.model('Booking', bookingSchema);
+// Create indexes for performance
+bookingSchema.index({ userId: 1 });
+bookingSchema.index({ driverId: 1 });
+bookingSchema.index({ status: 1 });
+bookingSchema.index({ type: 1 });
+bookingSchema.index({ pickupDate: 1 });
+bookingSchema.index({ createdAt: -1 });
+bookingSchema.index({ 'source.location': '2dsphere' });
 
-module.exports = Booking;
+module.exports = mongoose.model('Booking', bookingSchema);
