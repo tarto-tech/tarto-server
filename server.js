@@ -138,6 +138,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Tarto Server API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      users: '/api/users',
+      bookings: '/api/bookings',
+      vehicles: '/api/vehicles',
+      drivers: '/api/drivers'
+    }
+  });
+});
+
 // App version manager page (admin only)
 app.get('/app-version-manager', (req, res) => {
   res.sendFile(__dirname + '/public/app-version.html');
