@@ -376,10 +376,40 @@ router.post('/:driverId/location', async (req, res) => {
     const { latitude, longitude } = req.body;
     
     await Driver.findByIdAndUpdate(req.params.driverId, {
-      location: { latitude, longitude }
+      location: { latitude, longitude },
+      currentLocation: {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      }
     });
     
     res.json({ success: true, message: 'Location updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /drivers/:driverId/fcm-token - Update driver FCM token
+router.post('/:driverId/fcm-token', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { fcmToken } = req.body;
+    
+    if (!fcmToken) {
+      return res.status(400).json({ success: false, message: 'FCM token is required' });
+    }
+    
+    const driver = await Driver.findByIdAndUpdate(
+      driverId,
+      { fcmToken },
+      { new: true }
+    );
+    
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+    
+    res.json({ success: true, message: 'FCM token updated successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

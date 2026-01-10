@@ -28,6 +28,58 @@ async function sendNotificationToCustomer({ customerId, type, title, body, data 
   }
 }
 
+// Function to notify nearby drivers about new trip requests
+async function notifyNearbyDrivers({ bookingId, pickupLocation, dropoffLocation, fare, distance, pickupAddress, dropoffAddress }) {
+  try {
+    const Driver = require('../models/Driver');
+    const admin = require('firebase-admin');
+    
+    // Get all active drivers within 30km radius
+    const nearbyDrivers = await Driver.find({
+      status: 'active',
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [pickupLocation.longitude, pickupLocation.latitude]
+          },
+          $maxDistance: 30000 // 30km in meters
+        }
+      },
+      fcmToken: { $exists: true, $ne: null }
+    });
+
+    // Send notification to each driver
+    const notifications = nearbyDrivers.map(driver => ({
+      token: driver.fcmToken,
+      notification: {
+        title: 'New Trip Request 🚗',
+        body: `${pickupAddress} → ${dropoffAddress}\n₹${fare} • ${distance}km`
+      },
+      data: {
+        type: 'new_trip_request',
+        booking_id: bookingId.toString(),
+        pickup_address: pickupAddress,
+        dropoff_address: dropoffAddress,
+        fare: fare.toString(),
+        distance: distance.toString(),
+        pickup_lat: pickupLocation.latitude.toString(),
+        pickup_lng: pickupLocation.longitude.toString(),
+        dropoff_lat: dropoffLocation.latitude.toString(),
+        dropoff_lng: dropoffLocation.longitude.toString()
+      }
+    }));
+
+    // Send batch notifications
+    if (notifications.length > 0 && admin.apps.length > 0) {
+      await admin.messaging().sendAll(notifications);
+      console.log(`Sent trip notifications to ${notifications.length} drivers`);
+    }
+  } catch (error) {
+    console.error('Error notifying drivers:', error);
+  }
+}
+
 
 // Get all bookings (for admin panel)
 // IMPORTANT: This route must come BEFORE the /:id route
@@ -100,6 +152,25 @@ router.post('/outstation', async (req, res) => {
     });
 
     const savedBooking = await booking.save();
+
+    // Notify nearby drivers about new outstation trip request
+    if (source?.location?.coordinates && destination?.location?.coordinates) {
+      await notifyNearbyDrivers({
+        bookingId: savedBooking._id,
+        pickupLocation: {
+          latitude: source.location.coordinates[1],
+          longitude: source.location.coordinates[0]
+        },
+        dropoffLocation: {
+          latitude: destination.location.coordinates[1],
+          longitude: destination.location.coordinates[0]
+        },
+        fare: totalPrice,
+        distance: distance,
+        pickupAddress: source.name || source.address,
+        dropoffAddress: destination.name || destination.address
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -222,6 +293,25 @@ router.post('/', async (req, res) => {
 
     // Save booking
     const savedBooking = await booking.save();
+
+    // Notify nearby drivers about new trip request
+    if (source?.location?.coordinates && destination?.location?.coordinates) {
+      await notifyNearbyDrivers({
+        bookingId: savedBooking._id,
+        pickupLocation: {
+          latitude: source.location.coordinates[1],
+          longitude: source.location.coordinates[0]
+        },
+        dropoffLocation: {
+          latitude: destination.location.coordinates[1],
+          longitude: destination.location.coordinates[0]
+        },
+        fare: totalPrice,
+        distance: distance,
+        pickupAddress: source.name || source.address,
+        dropoffAddress: destination.name || destination.address
+      });
+    }
 
     res.status(201).json({
       success: true,

@@ -71,6 +71,8 @@ const driverSchema = new mongoose.Schema({
   isOnline: { type: Boolean, default: false },
   isAvailable: { type: Boolean, default: false },
   
+  fcmToken: { type: String, default: null },
+  
   workLocations: [{
     name: String,
     city: String,
