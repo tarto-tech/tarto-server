@@ -60,7 +60,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // Create indexes for performance
-userSchema.index({ phone: 1 });
 userSchema.index({ email: 1 });
 userSchema.index({ isRegistered: 1 });
 
