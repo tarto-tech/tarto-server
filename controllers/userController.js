@@ -1,10 +1,6 @@
 const User = require('../models/userModel');
-const jwt = require('jsonwebtoken');
 const { sendOTP, verifyOTP } = require('../services/otpService');
-
-// JWT configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-const JWT_EXPIRES_IN = '7d';
+const { generateToken } = require('../utils/jwtUtils');
 
 // Check if user exists by phone number
 exports.checkUserExists = async (req, res) => {
@@ -28,7 +24,7 @@ exports.checkUserExists = async (req, res) => {
     console.error('Error checking user existence:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to check user existence'
+      message: 'Internal server error'
     });
   }
 };
@@ -38,10 +34,17 @@ exports.createUser = async (req, res) => {
   try {
     const { phone, name, email, gender } = req.body;
     
+    if (!phone || !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number and name are required'
+      });
+    }
+    
     // Check if user already exists
     const existingUser = await User.findOne({ phone });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'User with this phone number already exists'
       });
@@ -62,7 +65,6 @@ exports.createUser = async (req, res) => {
       userData.gender = gender;
     }
     
-    console.log('Creating user with data:', userData);
     const newUser = new User(userData);
     const savedUser = await newUser.save();
     
@@ -72,10 +74,18 @@ exports.createUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating user:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user data',
+        errors: Object.values(error.errors).map(e => e.message)
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to create user',
-      error: error.message
+      message: 'Internal server error'
     });
   }
 };
@@ -84,6 +94,14 @@ exports.createUser = async (req, res) => {
 exports.getUserByPhone = async (req, res) => {
   try {
     const { phone } = req.params;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+    
     const user = await User.findOne({ phone });
     
     if (!user) {
@@ -94,11 +112,7 @@ exports.getUserByPhone = async (req, res) => {
     }
     
     // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, phone: user.phone },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+    const token = generateToken({ id: user._id, phone: user.phone });
     
     res.json({
       success: true,
@@ -109,7 +123,7 @@ exports.getUserByPhone = async (req, res) => {
     console.error('Error fetching user by phone:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch user'
+      message: 'Internal server error'
     });
   }
 };
@@ -120,8 +134,19 @@ exports.updateUser = async (req, res) => {
     const { phone } = req.params;
     const updates = req.body;
     
-    console.log('Updating user with phone:', phone);
-    console.log('Update data received:', updates);
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Update data is required'
+      });
+    }
     
     // Validate gender if it's being updated
     if (updates.gender && !['male', 'female', 'other'].includes(updates.gender)) {
@@ -145,18 +170,24 @@ exports.updateUser = async (req, res) => {
       });
     }
     
-    console.log('User updated successfully:', user);
-    
     res.json({
       success: true,
       data: user
     });
   } catch (error) {
     console.error('Error updating user:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid update data',
+        errors: Object.values(error.errors).map(e => e.message)
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to update user',
-      error: error.message
+      message: 'Internal server error'
     });
   }
 };
@@ -172,7 +203,11 @@ exports.loginUser = async (req, res) => {
       });
     }
     
-    const user = await User.findOne({ phone });
+    const user = await User.findOneAndUpdate(
+      { phone },
+      { isLoggedIn: true, lastLoginAt: new Date() },
+      { new: true }
+    );
     
     if (!user) {
       return res.status(404).json({
@@ -182,11 +217,7 @@ exports.loginUser = async (req, res) => {
     }
     
     // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, phone: user.phone },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+    const token = generateToken({ id: user._id, phone: user.phone });
     
     res.json({
       success: true,
@@ -197,7 +228,7 @@ exports.loginUser = async (req, res) => {
     console.error('Error during login:', error);
     res.status(500).json({
       success: false,
-      message: 'Login failed'
+      message: 'Internal server error'
     });
   }
 };
@@ -222,7 +253,7 @@ exports.sendOTP = async (req, res) => {
         message: 'OTP sent successfully'
       });
     } else {
-      res.status(500).json({
+      res.status(400).json({
         success: false,
         message: result.error || 'Failed to send OTP'
       });
@@ -231,7 +262,7 @@ exports.sendOTP = async (req, res) => {
     console.error('Error sending OTP:', error);
     res.status(500).json({
       success: false,
-      message: 'No response from OTP service'
+      message: 'Internal server error'
     });
   }
 };
@@ -265,7 +296,7 @@ exports.verifyOTP = async (req, res) => {
     console.error('Error verifying OTP:', error);
     res.status(500).json({
       success: false,
-      message: 'OTP verification failed'
+      message: 'Internal server error'
     });
   }
 };

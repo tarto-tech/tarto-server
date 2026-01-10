@@ -4,6 +4,14 @@ const Vehicle = require('../models/Vehicle');
 const Booking = require('../models/BookingModel');
 const User = require('../models/userModel');
 const { sendNotification } = require('../services/notificationService');
+const { catchAsync } = require('../middleware/errorHandler');
+const bookingUpdateController = require('../controllers/bookingUpdateController');
+const { authenticateToken } = require('../middleware/auth');
+
+// Booking update endpoints
+router.put('/:bookingId/stops', authenticateToken, bookingUpdateController.updateBookingStops);
+router.put('/:bookingId/schedule', authenticateToken, bookingUpdateController.updateBookingSchedule);
+router.put('/:bookingId', authenticateToken, bookingUpdateController.updateBooking);
 
 // Notification service function for customers
 async function sendNotificationToCustomer({ customerId, type, title, body, data }) {
