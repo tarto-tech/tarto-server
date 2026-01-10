@@ -12,8 +12,17 @@ dotenv.config();
 connectDB();
 
 // Call the function after connection is established
-mongoose.connection.once('open', () => {
+mongoose.connection.once('open', async () => {
   console.log('MongoDB connection established');
+  
+  // Create geospatial index for drivers
+  try {
+    const Driver = require('./models/Driver');
+    await Driver.collection.createIndex({ location: '2dsphere' });
+    console.log('✅ Geospatial index ensured on Driver.location');
+  } catch (error) {
+    console.warn('Geospatial index creation warning:', error.message);
+  }
 });
 
 const app = express();

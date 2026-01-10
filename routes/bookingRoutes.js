@@ -34,10 +34,10 @@ async function notifyNearbyDrivers({ bookingId, pickupLocation, dropoffLocation,
     const Driver = require('../models/Driver');
     const admin = require('firebase-admin');
     
-    // Get all active drivers within 30km radius
+    // Get all active drivers within 30km radius using currentLocation (which has 2dsphere index)
     const nearbyDrivers = await Driver.find({
       status: 'active',
-      location: {
+      currentLocation: {
         $near: {
           $geometry: {
             type: 'Point',
@@ -74,6 +74,8 @@ async function notifyNearbyDrivers({ bookingId, pickupLocation, dropoffLocation,
     if (notifications.length > 0 && admin.apps.length > 0) {
       await admin.messaging().sendAll(notifications);
       console.log(`Sent trip notifications to ${notifications.length} drivers`);
+    } else {
+      console.log('No nearby active drivers found or Firebase not initialized');
     }
   } catch (error) {
     console.error('Error notifying drivers:', error);

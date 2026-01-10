@@ -58,14 +58,9 @@ const driverSchema = new mongoose.Schema({
   totalTrips: { type: Number, default: 0 },
   totalEarnings: { type: Number, default: 0 },
   
-  currentLocation: {
+  location: {
     type: { type: String, default: 'Point' },
     coordinates: { type: [Number], default: [0, 0] }
-  },
-  
-  location: {
-    latitude: Number,
-    longitude: Number
   },
   
   isOnline: { type: Boolean, default: false },
@@ -83,6 +78,6 @@ const driverSchema = new mongoose.Schema({
   lastActiveAt: { type: Date }
 }, { timestamps: true });
 
-driverSchema.index({ currentLocation: '2dsphere' });
+driverSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.models.Driver || mongoose.model('Driver', driverSchema);

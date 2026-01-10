@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const Driver = require('../models/Driver');
 
 // Initialize Firebase Admin (add your service account key)
 // Download from Firebase Console -> Project Settings -> Service Accounts
@@ -70,4 +71,123 @@ const sendNotification = async ({ to, notification, data }) => {
   }
 };
 
-module.exports = { sendNotification };
+const notifyNearbyDrivers = async ({ bookingId, pickupLocation, dropoffLocation, fare, distance, pickupAddress, dropoffAddress }) => {
+  try {
+    // Find nearby drivers using geospatial query
+    const nearbyDrivers = await Driver.find({
+      status: 'active',
+      fcmToken: { $exists: true, $ne: null },
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [pickupLocation.longitude, pickupLocation.latitude]
+          },
+          $maxDistance: 30000 // 30km in meters
+        }
+      }
+    }).limit(50);
+
+    console.log(`Found ${nearbyDrivers.length} nearby drivers`);
+
+    if (nearbyDrivers.length === 0) {
+      console.log('No nearby drivers found');
+      return { success: false, message: 'No nearby drivers found' };
+    }
+
+    // Send notifications to all nearby drivers
+    const notifications = nearbyDrivers.map(driver => ({
+      token: driver.fcmToken,
+      notification: {
+        title: 'New Trip Request 🚗',
+        body: `${pickupAddress} → ${dropoffAddress}\n₹${fare} • ${distance}km`
+      },
+      data: {
+        type: 'new_trip_request',
+        booking_id: bookingId.toString(),
+        pickup_address: pickupAddress,
+        dropoff_address: dropoffAddress,
+        fare: fare.toString(),
+        distance: distance.toString()
+      }
+    }));
+
+    const results = await admin.messaging().sendAll(notifications);
+    console.log(`Sent notifications to ${results.successCount} drivers, ${results.failureCount} failed`);
+    
+    return { 
+      success: true, 
+      driversNotified: results.successCount,
+      totalDrivers: nearbyDrivers.length 
+    };
+
+  } catch (error) {
+    console.error('Error notifying drivers:', error);
+    
+    // Fallback: Use aggregation pipeline if geospatial query fails
+    try {
+      console.log('Attempting fallback method...');
+      const nearbyDrivers = await Driver.aggregate([
+        {
+          $match: {
+            status: 'active',
+            fcmToken: { $exists: true, $ne: null },
+            location: { $exists: true }
+          }
+        },
+        {
+          $addFields: {
+            distance: {
+              $sqrt: {
+                $add: [
+                  { $pow: [{ $subtract: [{ $arrayElemAt: ["$location.coordinates", 0] }, pickupLocation.longitude] }, 2] },
+                  { $pow: [{ $subtract: [{ $arrayElemAt: ["$location.coordinates", 1] }, pickupLocation.latitude] }, 2] }
+                ]
+              }
+            }
+          }
+        },
+        {
+          $match: {
+            distance: { $lte: 0.27 } // Roughly 30km in degrees
+          }
+        },
+        { $limit: 50 }
+      ]);
+
+      if (nearbyDrivers.length > 0) {
+        const notifications = nearbyDrivers.map(driver => ({
+          token: driver.fcmToken,
+          notification: {
+            title: 'New Trip Request 🚗',
+            body: `${pickupAddress} → ${dropoffAddress}\n₹${fare} • ${distance}km`
+          },
+          data: {
+            type: 'new_trip_request',
+            booking_id: bookingId.toString(),
+            pickup_address: pickupAddress,
+            dropoff_address: dropoffAddress,
+            fare: fare.toString(),
+            distance: distance.toString()
+          }
+        }));
+
+        const results = await admin.messaging().sendAll(notifications);
+        console.log(`Fallback: Sent notifications to ${results.successCount} drivers`);
+        
+        return { 
+          success: true, 
+          driversNotified: results.successCount,
+          totalDrivers: nearbyDrivers.length,
+          method: 'fallback'
+        };
+      }
+    } catch (fallbackError) {
+      console.error('Fallback method also failed:', fallbackError);
+    }
+    
+    return { success: false, error: error.message };
+  }
+};
+
+module.exports = { sendNotification, notifyNearbyDrivers };
