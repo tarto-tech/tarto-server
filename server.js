@@ -22,8 +22,6 @@ connectDB().catch(err => {
   console.error('MongoDB connection failed, continuing without DB:', err.message);
 });
 
-const app = express();
-
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
