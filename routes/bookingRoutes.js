@@ -1056,6 +1056,35 @@ router.post('/:bookingId/cancel', async (req, res) => {
   }
 });
 
+// DELETE /bookings/:bookingId/tripcancelbyuser - Delete booking by user
+router.delete('/:bookingId/tripcancelbyuser', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { reason } = req.body;
+    
+    // Delete booking from database
+    const result = await Booking.findByIdAndDelete(bookingId);
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Booking deleted successfully'
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete booking'
+    });
+  }
+});
+
 // GET /bookings/:bookingId/completion-otp - Check for completion OTP (Customer polling)
 router.get('/:bookingId/completion-otp', async (req, res) => {
   try {
