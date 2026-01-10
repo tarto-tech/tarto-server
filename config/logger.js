@@ -9,10 +9,46 @@ const consoleFormat = printf(({ level, message, timestamp, stack }) => {
   return `${timestamp} [${level}]: ${stack || message}`;
 });
 
-// Create logs directory if it doesn't exist
+// Create logs directory only in development
 const fs = require('fs');
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
+if (process.env.NODE_ENV !== 'production' && !fs.existsSync(logDir)) {
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+  } catch (error) {
+    console.warn('Could not create logs directory:', error.message);
+  }
+}
+
+// Configure transports based on environment
+const transports = [
+  // Always include console output
+  new winston.transports.Console({
+    format: combine(
+      colorize(),
+      timestamp({ format: 'HH:mm:ss' }),
+      consoleFormat
+    ),
+    silent: process.env.NODE_ENV === 'test'
+  })
+];
+
+// Only add file transports in development or when filesystem is writable
+if (process.env.NODE_ENV !== 'production') {
+  transports.push(
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 10485760,
+      maxFiles: 5,
+      tailable: true
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, 'combined.log'),
+      maxsize: 10485760,
+      maxFiles: 5,
+      tailable: true
+    })
+  );
 }
 
 const logger = winston.createLogger({
@@ -23,51 +59,26 @@ const logger = winston.createLogger({
     json()
   ),
   defaultMeta: { service: 'tarto-server' },
-  transports: [
-    // Error log file
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 10485760, // 10MB
-      maxFiles: 5,
-      tailable: true
-    }),
-    
-    // Combined log file
-    new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      maxsize: 10485760, // 10MB
-      maxFiles: 5,
-      tailable: true
-    }),
-    
-    // Console output for development
-    new winston.transports.Console({
-      format: combine(
-        colorize(),
-        timestamp({ format: 'HH:mm:ss' }),
-        consoleFormat
-      ),
-      silent: process.env.NODE_ENV === 'test'
-    })
-  ],
+  transports,
   
-  // Handle exceptions and rejections
-  exceptionHandlers: [
-    new winston.transports.File({ 
-      filename: path.join(logDir, 'exceptions.log'),
-      maxsize: 10485760,
-      maxFiles: 3
-    })
-  ],
-  
-  rejectionHandlers: [
-    new winston.transports.File({ 
-      filename: path.join(logDir, 'rejections.log'),
-      maxsize: 10485760,
-      maxFiles: 3
-    })
-  ]
+  // Only handle exceptions/rejections with files in development
+  ...(process.env.NODE_ENV !== 'production' && {
+    exceptionHandlers: [
+      new winston.transports.File({ 
+        filename: path.join(logDir, 'exceptions.log'),
+        maxsize: 10485760,
+        maxFiles: 3
+      })
+    ],
+    
+    rejectionHandlers: [
+      new winston.transports.File({ 
+        filename: path.join(logDir, 'rejections.log'),
+        maxsize: 10485760,
+        maxFiles: 3
+      })
+    ]
+  })
 });
 
 // Create a stream object for Morgan HTTP logging
