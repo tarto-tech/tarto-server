@@ -532,7 +532,12 @@ router.patch('/:id', async (req, res) => {
     booking.updatedAt = new Date();
     await booking.save();
     
-    res.json({ success: true, data: booking });
+    // Populate related fields and return complete booking object
+    const completeBooking = await Booking.findById(id)
+      .populate('userId', 'name phone email')
+      .populate('vehicleId', 'title type capacity imageUrl basePrice');
+    
+    res.json({ success: true, data: completeBooking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
