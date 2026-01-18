@@ -477,57 +477,64 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Update booking status
-router.patch('/:id/status', async (req, res) => {
+// PATCH /bookings/:id - Update booking with partial data (accept, start, complete)
+router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-
-    // Validate status
-    if (!['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
-      });
-    }
-
-    // Find booking
+    const { status, driverId, otp, acceptedAt, startedAt, completedAt } = req.body;
+    
     const booking = await Booking.findById(id);
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    
+    // Handle status-specific logic
+    if (status === 'accepted' && driverId) {
+      // Check if driver already has active booking
+      const existingActiveBooking = await Booking.findOne({
+        driverId: driverId,
+        status: { $in: ['accepted', 'confirmed', 'started'] }
       });
+      
+      if (existingActiveBooking) {
+        return res.status(400).json({
+          success: false,
+          error: 'You already have an active booking. Complete it first.'
+        });
+      }
+      
+      // Get driver details
+      const Driver = require('../models/Driver');
+      const driver = await Driver.findById(driverId);
+      if (driver) {
+        booking.driverName = driver.name;
+        booking.vehicleNumber = driver.vehicleDetails?.registrationNumber;
+        booking.advanceAmount = Math.round(booking.totalPrice * 0.2);
+      }
     }
-
-    // Update booking status and timestamps
-    booking.status = status;
-
-    if (status === 'in_progress') {
-      booking.startedAt = new Date();
-    } else if (status === 'completed') {
-      booking.completedAt = new Date();
-      await Vehicle.findByIdAndUpdate(booking.vehicleId, { isAvailable: true });
-    } else if (status === 'cancelled') {
-      booking.cancelledAt = new Date();
-      await Vehicle.findByIdAndUpdate(booking.vehicleId, { isAvailable: true });
+    
+    if (status === 'completed' && otp) {
+      // Verify OTP
+      if (booking.completionOTP !== otp) {
+        return res.status(400).json({ success: false, error: 'Invalid OTP' });
+      }
+      booking.completionOTP = undefined;
+      booking.otpGeneratedAt = undefined;
     }
-
+    
+    // Update only provided fields
+    if (status) booking.status = status;
+    if (driverId) booking.driverId = driverId;
+    if (acceptedAt) booking.acceptedAt = acceptedAt;
+    if (startedAt) booking.startedAt = startedAt;
+    if (completedAt) booking.completedAt = completedAt;
+    
+    booking.updatedAt = new Date();
     await booking.save();
-
-    res.json({
-      success: true,
-      message: `Booking status updated to ${status}`,
-      data: booking
-    });
-
+    
+    res.json({ success: true, data: booking });
   } catch (error) {
-    console.error('Error updating booking status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update booking status',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -647,111 +654,6 @@ router.get('/:id', async (req, res) => {
 });
 
 
-
-// POST /bookings/:bookingId/accept - Accept booking with single trip validation
-router.post('/:bookingId/accept', async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { driverId, notifyCustomer = true } = req.body;
-
-    // Validate required fields
-    if (!driverId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Driver ID is required'
-      });
-    }
-
-    // Check if driver already has an active booking
-    const existingActiveBooking = await Booking.findOne({
-      driverId: driverId,
-      status: { $in: ['accepted', 'confirmed', 'started'] }
-    });
-
-    if (existingActiveBooking) {
-      return res.status(400).json({
-        success: false,
-        error: 'You already have an active booking. Complete it first.'
-      });
-    }
-
-    // Find the booking to accept
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found'
-      });
-    }
-
-    // Validate booking status
-    if (booking.status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Booking is no longer available'
-      });
-    }
-
-    // Get driver details
-    const Driver = require('../models/Driver');
-    const driver = await Driver.findById(driverId);
-    if (!driver) {
-      return res.status(404).json({
-        success: false,
-        message: 'Driver not found'
-      });
-    }
-
-    // Calculate advance amount (20% of total price)
-    const advanceAmount = Math.round(booking.totalPrice * 0.2);
-
-    // Update booking with driver details
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      bookingId,
-      {
-        status: 'accepted',
-        driverId: driverId,
-        driverName: driver.name,
-        vehicleName: driver.vehicleDetails?.type || 'Vehicle',
-        vehicleNumber: driver.vehicleDetails?.registrationNumber,
-        advanceAmount: advanceAmount,
-        acceptedAt: new Date(),
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-
-    // Send notification to customer if requested
-    if (notifyCustomer && booking.userId) {
-      await sendNotificationToCustomer({
-        customerId: booking.userId,
-        type: 'trip_accepted',
-        title: 'Trip Accepted! 🚗',
-        body: `${driver.name} (${driver.vehicleDetails?.registrationNumber || 'Vehicle'}) accepted your trip. Pay advance ₹${advanceAmount} to confirm.`,
-        data: {
-          trip_id: bookingId,
-          driver_name: driver.name,
-          vehicle_number: driver.vehicleDetails?.registrationNumber || '',
-          advance_amount: advanceAmount.toString()
-        }
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Booking accepted successfully',
-      data: updatedBooking
-    });
-
-  } catch (error) {
-    console.error('Error accepting booking:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to accept booking',
-      error: error.message
-    });
-  }
-});
 
 // POST /bookings/:bookingId/reject - Reject booking
 router.post('/:bookingId/reject', async (req, res) => {
