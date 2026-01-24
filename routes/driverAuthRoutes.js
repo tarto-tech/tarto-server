@@ -1,8 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const router = express.Router();
 const Driver = require('../models/Driver.js');
-const { sendOTP, verifyOTP } = require('../services/otpService');
+const OTP = require('../models/OTP.js');
 const rateLimit = require('express-rate-limit');
 
 // Rate limiter for OTP requests
@@ -12,51 +13,82 @@ const otpLimiter = rateLimit({
   message: { success: false, message: 'Too many OTP requests. Please try again later.' }
 });
 
-// 1. POST /auth/send-otp - Send OTP to driver
+// POST /auth/send-otp
 router.post('/send-otp', otpLimiter, async (req, res) => {
   try {
-    const { phone } = req.body;
-
+    const { phoneNumber } = req.body;
+    
     // Validate phone number
-    if (!phone || !/^[0-9]{10}$/.test(phone)) {
+    if (!phoneNumber || !/^[0-9]{10}$/.test(phoneNumber)) {
       return res.status(400).json({ success: false, message: 'Valid 10-digit phone number required' });
     }
-
-    // Send OTP via MSG91
-    const otpResult = await sendOTP(phone);
     
-    if (!otpResult.success) {
-      // For development: log test OTP
-      const testOtp = '1234';
-      console.log(`Test OTP for ${phone}: ${testOtp}`);
-      return res.json({ success: true, message: 'OTP sent successfully (test mode)' });
+    // Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    
+    // Delete old OTPs for this phone number
+    await OTP.deleteMany({ phoneNumber });
+    
+    // Store OTP in database with 10 minute expiry
+    await OTP.create({
+      phoneNumber,
+      otp: otp.toString(),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+    });
+    
+    // Send via MSG91
+    try {
+      await axios.get('https://api.msg91.com/api/v5/otp', {
+        params: {
+          authkey: process.env.MSG91_AUTH_TOKEN,
+          mobile: phoneNumber,
+          otp: otp,
+          template_id: process.env.MSG91_WIDGET_ID
+        }
+      });
+    } catch (msg91Error) {
+      console.log('MSG91 error, using test mode:', msg91Error.message);
     }
-
-    res.json({ success: true, message: 'OTP sent successfully' });
+    
+    res.json({ 
+      success: true, 
+      message: 'OTP sent successfully',
+      ...(process.env.NODE_ENV !== 'production' && { otp })
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
-// 2. POST /auth/verify-otp - Verify OTP and check driver status
+// POST /auth/verify-otp
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phone, otp } = req.body;
+    const { phoneNumber, otp } = req.body;
 
-    if (!phone || !otp) {
+    if (!phoneNumber || !otp) {
       return res.status(400).json({ success: false, message: 'Phone number and OTP required' });
     }
 
-    // Verify OTP with MSG91
-    const verifyResult = await verifyOTP(phone, otp);
+    // Find OTP in database
+    const otpRecord = await OTP.findOne({ phoneNumber, otp: otp.toString() });
     
-    // For development: accept test OTP
-    if (!verifyResult.success && otp !== '1234') {
+    if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
+    if (otpRecord.expiresAt < new Date()) {
+      await OTP.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ success: false, message: 'OTP expired' });
+    }
+
+    // Delete used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
     // Check if driver exists
-    const driver = await Driver.findOne({ phone });
+    const driver = await Driver.findOne({ phone: phoneNumber });
     
     if (driver) {
       // Driver exists - generate JWT token
@@ -94,7 +126,7 @@ router.post('/verify-otp', async (req, res) => {
         success: true,
         isRegistered: false,
         message: 'Please complete registration',
-        phone: phone
+        phoneNumber: phoneNumber
       });
     }
   } catch (error) {
@@ -102,7 +134,7 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// 3. POST /auth/register - Register new driver
+// POST /auth/register
 router.post('/register', async (req, res) => {
   try {
     const { 
