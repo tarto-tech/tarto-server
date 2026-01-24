@@ -24,40 +24,31 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid 10-digit phone number required' });
     }
     
-    // Generate OTP
-    const otp = Math.floor(1000 + Math.random() * 9000);
-    
-    // Delete old OTPs for this phone number
-    await OTP.deleteMany({ phoneNumber: phoneNum });
-    
-    // Store OTP in database with 10 minute expiry
-    await OTP.create({
-      phoneNumber: phoneNum,
-      otp: otp.toString(),
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
-    });
-    
-    // Send via MSG91
+    // Let MSG91 generate and send OTP
     try {
-      const msg91Response = await axios.get('https://control.msg91.com/api/sendotp.php', {
-        params: {
-          authkey: process.env.MSG91_AUTH_TOKEN,
-          mobile: `91${phoneNum}`,  // Add 91 prefix for India
-          message: `Your Tarto OTP is ${otp}. Valid for 10 minutes.`,
-          sender: 'TARTO',
-          otp: otp
+      const msg91Response = await axios.post(
+        `https://control.msg91.com/api/v5/otp?template_id=${process.env.MSG91_WIDGET_ID}&mobile=91${phoneNum}`,
+        {},
+        {
+          headers: {
+            'authkey': process.env.MSG91_AUTH_TOKEN,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
       console.log('MSG91 Response:', msg91Response.data);
+      
+      res.json({ 
+        success: true, 
+        message: 'OTP sent successfully'
+      });
     } catch (msg91Error) {
       console.error('MSG91 Error:', msg91Error.response?.data || msg91Error.message);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send OTP. Please try again.' 
+      });
     }
-    
-    res.json({ 
-      success: true, 
-      message: 'OTP sent successfully',
-      ...(process.env.NODE_ENV !== 'production' && { otp })
-    });
   } catch (error) {
     console.error('Send OTP Error:', error);
     res.status(500).json({ 
@@ -77,20 +68,29 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number and OTP required' });
     }
 
-    // Find OTP in database
-    const otpRecord = await OTP.findOne({ phoneNumber: phoneNum, otp: otp.toString() });
-    
-    if (!otpRecord) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    // Verify OTP with MSG91
+    try {
+      const verifyResponse = await axios.post(
+        `https://control.msg91.com/api/v5/otp/verify?otp=${otp}&mobile=91${phoneNum}`,
+        {},
+        {
+          headers: {
+            'authkey': process.env.MSG91_AUTH_TOKEN,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('MSG91 Verify Response:', verifyResponse.data);
+      
+      // Check if verification was successful
+      if (verifyResponse.data.type !== 'success') {
+        return res.status(400).json({ success: false, message: 'Invalid OTP' });
+      }
+    } catch (msg91Error) {
+      console.error('MSG91 Verify Error:', msg91Error.response?.data || msg91Error.message);
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
-
-    if (otpRecord.expiresAt < new Date()) {
-      await OTP.deleteOne({ _id: otpRecord._id });
-      return res.status(400).json({ success: false, message: 'OTP expired' });
-    }
-
-    // Delete used OTP
-    await OTP.deleteOne({ _id: otpRecord._id });
 
     // Check if driver exists
     const driver = await Driver.findOne({ phone: phoneNum });
