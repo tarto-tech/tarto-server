@@ -16,10 +16,11 @@ const otpLimiter = rateLimit({
 // POST /auth/send-otp
 router.post('/send-otp', otpLimiter, async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    const { phoneNumber, phone } = req.body;
+    const phoneNum = phoneNumber || phone;
     
     // Validate phone number
-    if (!phoneNumber || !/^[0-9]{10}$/.test(phoneNumber)) {
+    if (!phoneNum || !/^[0-9]{10}$/.test(phoneNum)) {
       return res.status(400).json({ success: false, message: 'Valid 10-digit phone number required' });
     }
     
@@ -27,27 +28,29 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
     const otp = Math.floor(1000 + Math.random() * 9000);
     
     // Delete old OTPs for this phone number
-    await OTP.deleteMany({ phoneNumber });
+    await OTP.deleteMany({ phoneNumber: phoneNum });
     
     // Store OTP in database with 10 minute expiry
     await OTP.create({
-      phoneNumber,
+      phoneNumber: phoneNum,
       otp: otp.toString(),
       expiresAt: new Date(Date.now() + 10 * 60 * 1000)
     });
     
     // Send via MSG91
     try {
-      await axios.get('https://api.msg91.com/api/v5/otp', {
+      const msg91Response = await axios.get('https://control.msg91.com/api/sendotp.php', {
         params: {
           authkey: process.env.MSG91_AUTH_TOKEN,
-          mobile: phoneNumber,
-          otp: otp,
-          template_id: process.env.MSG91_WIDGET_ID
+          mobile: phoneNum,
+          message: `Your Tarto OTP is ${otp}. Valid for 10 minutes.`,
+          sender: 'TARTO',
+          otp: otp
         }
       });
+      console.log('MSG91 Response:', msg91Response.data);
     } catch (msg91Error) {
-      console.log('MSG91 error, using test mode:', msg91Error.message);
+      console.error('MSG91 Error:', msg91Error.response?.data || msg91Error.message);
     }
     
     res.json({ 
@@ -56,6 +59,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
       ...(process.env.NODE_ENV !== 'production' && { otp })
     });
   } catch (error) {
+    console.error('Send OTP Error:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -66,14 +70,15 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
 // POST /auth/verify-otp
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { phoneNumber, phone, otp } = req.body;
+    const phoneNum = phoneNumber || phone;
 
-    if (!phoneNumber || !otp) {
+    if (!phoneNum || !otp) {
       return res.status(400).json({ success: false, message: 'Phone number and OTP required' });
     }
 
     // Find OTP in database
-    const otpRecord = await OTP.findOne({ phoneNumber, otp: otp.toString() });
+    const otpRecord = await OTP.findOne({ phoneNumber: phoneNum, otp: otp.toString() });
     
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
@@ -88,7 +93,7 @@ router.post('/verify-otp', async (req, res) => {
     await OTP.deleteOne({ _id: otpRecord._id });
 
     // Check if driver exists
-    const driver = await Driver.findOne({ phone: phoneNumber });
+    const driver = await Driver.findOne({ phone: phoneNum });
     
     if (driver) {
       // Driver exists - generate JWT token
@@ -126,7 +131,7 @@ router.post('/verify-otp', async (req, res) => {
         success: true,
         isRegistered: false,
         message: 'Please complete registration',
-        phoneNumber: phoneNumber
+        phoneNumber: phoneNum
       });
     }
   } catch (error) {
