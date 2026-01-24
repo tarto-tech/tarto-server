@@ -42,7 +42,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
       const msg91Response = await axios.get('https://control.msg91.com/api/sendotp.php', {
         params: {
           authkey: process.env.MSG91_AUTH_TOKEN,
-          mobile: phoneNum,
+          mobile: `91${phoneNum}`,  // Add 91 prefix for India
           message: `Your Tarto OTP is ${otp}. Valid for 10 minutes.`,
           sender: 'TARTO',
           otp: otp
