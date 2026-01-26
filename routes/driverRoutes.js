@@ -311,31 +311,35 @@ router.get('/profile/:driverId', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/update - Update driver profile
-router.post('/:driverId/update', async (req, res) => {
+// PATCH /drivers/:driverId - Update driver profile (partial update)
+router.patch('/:driverId', async (req, res) => {
   try {
     const { driverId } = req.params;
-    const { name, email, vehicleDetails } = req.body;
+    const updates = req.body;
 
-    const driver = await Driver.findById(driverId);
+    // Remove fields that shouldn't be updated directly
+    delete updates._id;
+    delete updates.phone;
+    delete updates.totalTrips;
+    delete updates.totalEarnings;
+    delete updates.createdAt;
+
+    const driver = await Driver.findByIdAndUpdate(
+      driverId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
     if (!driver) {
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
-
-    // Update fields
-    if (name) driver.name = name;
-    if (email) driver.email = email;
-    if (vehicleDetails?.registrationNumber) {
-      driver.vehicleDetails.registrationNumber = vehicleDetails.registrationNumber;
-    }
-
-    await driver.save();
 
     res.json({ success: true, data: { driver } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 // GET /drivers/:driverId/work-locations - Get driver work locations
 router.get('/:driverId/work-locations', async (req, res) => {

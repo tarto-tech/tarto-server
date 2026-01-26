@@ -88,7 +88,6 @@ const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
 const driverRoutes = require('./routes/driverRoutes');
-const driverAuthRoutes = require('./routes/driverAuthRoutes');
 const proxyRoutes = require('./routes/proxyRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
 
@@ -103,7 +102,6 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/driver', driverRoutes);
-app.use('/api/auth', driverAuthRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/pricing', pricingRoutes);
 
