@@ -19,12 +19,12 @@ const locationSchema = new mongoose.Schema({
 const paymentSchema = new mongoose.Schema({
   method: {
     type: String,
-    enum: ['cash', 'upi', 'card'],
+    enum: ['cash', 'online', 'upi', 'card'],
     required: true
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed', 'partial'],
+    enum: ['pending', 'paid', 'processing', 'completed', 'failed', 'partial'],
     default: 'pending'
   },
   transactionId: String,
