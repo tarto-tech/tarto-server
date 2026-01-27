@@ -513,6 +513,13 @@ router.patch('/:id', async (req, res) => {
       }
     }
     
+    if (status === 'started' && otp) {
+      // Verify OTP for trip start
+      if (booking.completionOTP !== otp) {
+        return res.status(400).json({ success: false, error: 'Invalid OTP' });
+      }
+    }
+    
     if (status === 'completed' && otp) {
       // Verify OTP
       if (booking.completionOTP !== otp) {
