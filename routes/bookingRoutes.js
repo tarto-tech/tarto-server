@@ -721,11 +721,11 @@ router.post('/:bookingId/driver-arrived', async (req, res) => {
   }
 });
 
-// POST /bookings/:bookingId/start - Start trip with advance payment
-router.post('/:bookingId/start', async (req, res) => {
+// PATCH /bookings/:bookingId/start - Start trip with advance payment and generate OTP
+router.patch('/:bookingId/start', async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { driverId, startTime } = req.body;
+    const { startTime } = req.body;
     
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -733,9 +733,18 @@ router.post('/:bookingId/start', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Booking must be confirmed to start trip' });
     }
     
+    // Generate OTP for trip completion
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
-      { status: 'started', startTime: startTime || new Date(), updatedAt: new Date() },
+      { 
+        status: 'started', 
+        startTime: startTime || new Date(), 
+        completionOTP: otp,
+        otpGeneratedAt: new Date(),
+        updatedAt: new Date() 
+      },
       { new: true }
     );
     
@@ -780,6 +789,7 @@ router.post('/:bookingId/start', async (req, res) => {
     res.json({
       success: true,
       message: 'Trip started successfully',
+      otp: otp,
       data: {
         booking: updatedBooking,
         advanceEarning: advanceAmount,
