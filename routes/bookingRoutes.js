@@ -828,7 +828,6 @@ router.post('/:bookingId/generate-otp', async (req, res) => {
         data: {
           type: 'otp_generated',
           otp: otp,
-          bookingId: bookingId,
           booking_id: bookingId
         }
       });
