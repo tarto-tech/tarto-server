@@ -818,6 +818,20 @@ router.post('/:bookingId/generate-otp', async (req, res) => {
       otpGeneratedAt: new Date()
     });
     
+    // Send notification to customer with OTP
+    if (booking.userId) {
+      await sendNotificationToCustomer({
+        customerId: booking.userId,
+        type: 'otp_generated',
+        title: 'Trip Start OTP',
+        body: `Your OTP is: ${otp}. Share this with your driver to start the trip.`,
+        data: {
+          otp: otp,
+          bookingId: bookingId
+        }
+      });
+    }
+    
     res.json({ success: true, otp, message: 'OTP sent to customer' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to generate OTP' });
