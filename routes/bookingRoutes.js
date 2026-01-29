@@ -6,9 +6,9 @@ const User = require('../models/userModel');
 const { sendNotification } = require('../services/notificationService');
 const { catchAsync } = require('../middleware/errorHandler');
 const bookingUpdateController = require('../controllers/bookingUpdateController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authenticateDriver } = require('../middleware/auth');
 
-// Booking update endpoints
+// Booking update endpoints (protected)
 router.put('/:bookingId/stops', authenticateToken, bookingUpdateController.updateBookingStops);
 router.put('/:bookingId/schedule', authenticateToken, bookingUpdateController.updateBookingSchedule);
 router.put('/:bookingId', authenticateToken, bookingUpdateController.updateBooking);
@@ -122,7 +122,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /bookings/outstation - Create outstation booking (one-way or round trip)
-router.post('/outstation', async (req, res) => {
+router.post('/outstation', authenticateToken, async (req, res) => {
   try {
     const {
       userId, userName, userPhone, source, destination, stops, vehicleId, vehicleName,
@@ -194,7 +194,7 @@ router.post('/outstation', async (req, res) => {
 });
 
 // PUT /bookings/outstation/:bookingId - Update outstation booking
-router.put('/outstation/:bookingId', async (req, res) => {
+router.put('/outstation/:bookingId', authenticateToken, async (req, res) => {
   try {
     const { isRoundTrip, returnDate, pickupDate, pickupTime, totalPrice } = req.body;
     
@@ -227,7 +227,7 @@ router.put('/outstation/:bookingId', async (req, res) => {
 });
 
 // Create a new booking
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const {
       userId,
@@ -478,7 +478,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // PATCH /bookings/:id - Update booking with partial data (accept, start, complete)
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, driverId, otp, acceptedAt, startedAt, completedAt } = req.body;
@@ -551,7 +551,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // General booking update
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     let updateData = { ...req.body, updatedAt: new Date() };
@@ -668,7 +668,7 @@ router.get('/:id', async (req, res) => {
 
 
 // POST /bookings/:bookingId/reject - Reject booking
-router.post('/:bookingId/reject', async (req, res) => {
+router.post('/:bookingId/reject', authenticateDriver, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { driverId } = req.body;
@@ -692,7 +692,7 @@ router.post('/:bookingId/reject', async (req, res) => {
 });
 
 // POST /bookings/:bookingId/driver-arrived - Driver arrived at pickup
-router.post('/:bookingId/driver-arrived', async (req, res) => {
+router.post('/:bookingId/driver-arrived', authenticateDriver, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { driverId } = req.body;
@@ -729,7 +729,7 @@ router.post('/:bookingId/driver-arrived', async (req, res) => {
 });
 
 // PATCH /bookings/:bookingId/start - Start trip with advance payment and generate OTP
-router.patch('/:bookingId/start', async (req, res) => {
+router.patch('/:bookingId/start', authenticateDriver, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { startTime } = req.body;
@@ -809,7 +809,7 @@ router.patch('/:bookingId/start', async (req, res) => {
 });
 
 // POST /bookings/:bookingId/generate-otp - Generate OTP for trip completion
-router.post('/:bookingId/generate-otp', async (req, res) => {
+router.post('/:bookingId/generate-otp', authenticateDriver, async (req, res) => {
   try {
     const { bookingId } = req.params;
     
@@ -857,7 +857,7 @@ router.get('/test-ids', async (req, res) => {
 });
 
 // POST /bookings/:bookingId/complete - Complete trip with OTP verification
-router.post('/:bookingId/complete', async (req, res) => {
+router.post('/:bookingId/complete', authenticateDriver, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { otp, endTime } = req.body;
@@ -923,7 +923,7 @@ router.post('/:bookingId/complete', async (req, res) => {
 });
 
 // POST /bookings/:bookingId/cancel - Driver cancels accepted trip, returns to pending for reassignment
-router.post('/:bookingId/cancel', async (req, res) => {
+router.post('/:bookingId/cancel', authenticateDriver, async (req, res) => {
   try {
     const bookingId = req.params.bookingId;
     const { driverId, reason } = req.body;
@@ -1005,7 +1005,7 @@ router.post('/:bookingId/cancel', async (req, res) => {
 });
 
 // DELETE /bookings/:bookingId/tripcancelbyuser - Delete booking by user
-router.delete('/:bookingId/tripcancelbyuser', async (req, res) => {
+router.delete('/:bookingId/tripcancelbyuser', authenticateToken, async (req, res) => {
   try {
     const { bookingId } = req.params;
     
