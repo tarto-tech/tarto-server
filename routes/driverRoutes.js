@@ -7,7 +7,7 @@ const Booking = require('../models/BookingModel.js');
 const DriverAppVersion = require('../models/DriverAppVersion.js');
 const DriverEarning = require('../models/DriverEarning');
 
-// POST /drivers/auth/verify-otp - Proper JWT authentication endpoint
+// POST /drivers/auth/verify-otp
 router.post('/auth/verify-otp', async (req, res) => {
   try {
     const { phoneNumber, otp, userType } = req.body;
@@ -16,17 +16,13 @@ router.post('/auth/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number and OTP required' });
     }
 
-    // TODO: Verify OTP with MSG91 or your OTP service
-    // For now, accepting any 4-digit OTP for development
     if (otp.length !== 4) {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
-    // Check if driver exists
     const driver = await Driver.findOne({ phone: phoneNumber });
     
     if (driver) {
-      // Generate JWT token
       const token = jwt.sign(
         { 
           driverId: driver._id, 
@@ -55,7 +51,6 @@ router.post('/auth/verify-otp', async (req, res) => {
         }
       });
     } else {
-      // Driver not found
       res.status(404).json({
         success: false,
         error: 'Driver not found',
@@ -70,7 +65,7 @@ router.post('/auth/verify-otp', async (req, res) => {
   }
 });
 
-// POST /drivers/login - Generate OTP
+// POST /drivers/login
 router.post('/login', async (req, res) => {
   try {
     const { phone } = req.body;
@@ -79,14 +74,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number required' });
     }
     
-    // Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    
-    
-    
-    // Store OTP in database (expires in 10 minutes)
-  
-    
     console.log(`OTP for ${phone}: ${otp}`);
     
     res.json({ success: true, message: 'OTP generated' });
@@ -95,7 +83,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /drivers/verify-otp - Verify OTP and login
+// POST /drivers/verify-otp
 router.post('/verify-otp', async (req, res) => {
   try {
     const { phone, otp } = req.body;
@@ -104,17 +92,6 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone and OTP required' });
     }
     
-    // Find OTP in database
-    
-    if (!otpRecord) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
-    }
-    
-    if (otpRecord.expiresAt < new Date()) {
-      return res.status(400).json({ success: false, message: 'OTP expired' });
-    }
-    
-    // Find or create driver
     let driver = await Driver.findOne({ phone });
     
     if (!driver) {
@@ -122,9 +99,6 @@ router.post('/verify-otp', async (req, res) => {
       await driver.save();
     }
     
-    // Delete used OTP
-    
-    // Generate token
     const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
     
     res.json({ 
@@ -150,15 +124,12 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-
-
-// GET /drivers/profile/phone/:phoneNumber - Check if driver exists and get profile
+// GET /drivers/profile/phone/:phoneNumber
 router.get('/profile/phone/:phoneNumber', async (req, res) => {
   try {
     const driver = await Driver.findOne({ phone: req.params.phoneNumber });
     
     if (driver) {
-      // Generate token
       const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
       
       res.json({ 
@@ -188,92 +159,57 @@ router.get('/profile/phone/:phoneNumber', async (req, res) => {
   }
 });
 
-// POST /drivers/auth/register - Register new driver
+// POST /drivers/auth/register - Register new driver with JWT
 router.post('/auth/register', async (req, res) => {
   try {
-    const { 
-      phone, 
-      name, 
-      email, 
-      agencyName,
-      panNumber,
-      address,
-      dateOfBirth,
-      licenseNumber,
-      vehicleDetails,
-      gender,
-      documents 
-    } = req.body;
+    const { phone } = req.body;
     
-    // Check if driver already exists
-    let driver = await Driver.findOne({ phone });
-    if (driver) {
-      return res.status(400).json({ success: false, message: 'Driver already exists' });
-    }
-    
-    // Validate required fields
-    if (!phone || !name || !email || !agencyName || !panNumber || !licenseNumber || !vehicleDetails?.vehicleNumber) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Phone, name, email, agency name, PAN number, license number, and vehicle number are required' 
+    const existingDriver = await Driver.findOne({ phone });
+    if (existingDriver) {
+      return res.status(400).json({
+        success: false,
+        error: 'Driver already registered with this phone number'
       });
     }
     
-    // Validate PAN number format
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(panNumber.toUpperCase())) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid PAN number format' 
-      });
-    }
-    
-    // Validate vehicle number format
-    const vehicleRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
-    if (!vehicleRegex.test(vehicleDetails.vehicleNumber.toUpperCase())) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid vehicle number format' 
-      });
-    }
-    
-    // Create new driver
-    driver = new Driver({
-      phone,
-      name,
-      email,
-      agencyName,
-      panNumber: panNumber.toUpperCase(),
-      address,
-      dateOfBirth,
-      licenseNumber,
-      vehicleDetails: {
-        vehicleNumber: vehicleDetails.vehicleNumber.toUpperCase(),
-        vehicleType: vehicleDetails.vehicleType
-      },
-      gender,
-      documents,
+    const driver = new Driver({
+      ...req.body,
       status: 'pending'
     });
     
     await driver.save();
     
-    // Generate token
-    const token = Buffer.from(`${driver._id}:${Date.now()}`).toString('base64');
+    const token = jwt.sign(
+      { 
+        driverId: driver._id, 
+        phone: driver.phone,
+        type: 'driver' 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '30d' }
+    );
     
-    res.json({
+    res.status(201).json({
       success: true,
       data: {
-        token,
-        driver
-      }
+        _id: driver._id,
+        phone: driver.phone,
+        name: driver.name,
+        email: driver.email,
+        status: driver.status,
+        documents: driver.documents
+      },
+      token
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
-// GET /drivers/profile/:driverId - Get driver profile
+// GET /drivers/profile/:driverId
 router.get('/profile/:driverId', async (req, res) => {
   try {
     const driver = await Driver.findById(req.params.driverId);
@@ -311,13 +247,12 @@ router.get('/profile/:driverId', async (req, res) => {
   }
 });
 
-// PATCH /drivers/:driverId - Update driver profile (partial update)
+// PATCH /drivers/:driverId
 router.patch('/:driverId', async (req, res) => {
   try {
     const { driverId } = req.params;
     const updates = req.body;
 
-    // Remove fields that shouldn't be updated directly
     delete updates._id;
     delete updates.phone;
     delete updates.totalTrips;
@@ -340,8 +275,7 @@ router.patch('/:driverId', async (req, res) => {
   }
 });
 
-
-// GET /drivers/:driverId/work-locations - Get driver work locations
+// GET /drivers/:driverId/work-locations
 router.get('/:driverId/work-locations', async (req, res) => {
   try {
     const driver = await Driver.findById(req.params.driverId, 'workLocations');
@@ -354,7 +288,7 @@ router.get('/:driverId/work-locations', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/work-locations - Update driver work locations
+// POST /drivers/:driverId/work-locations
 router.post('/:driverId/work-locations', async (req, res) => {
   try {
     const { driverId } = req.params;
@@ -374,7 +308,7 @@ router.post('/:driverId/work-locations', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/location - Update driver location
+// POST /drivers/:driverId/location
 router.post('/:driverId/location', async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
@@ -393,7 +327,7 @@ router.post('/:driverId/location', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/fcm-token - Update driver FCM token
+// POST /drivers/:driverId/fcm-token
 router.post('/:driverId/fcm-token', async (req, res) => {
   try {
     const { driverId } = req.params;
@@ -419,7 +353,7 @@ router.post('/:driverId/fcm-token', async (req, res) => {
   }
 });
 
-// GET /drivers/app-version - Get current app version for driver app
+// GET /drivers/app-version
 router.get('/app-version', async (req, res) => {
   try {
     const version = await DriverAppVersion.findOne().sort({ createdAt: -1 });
@@ -432,9 +366,7 @@ router.get('/app-version', async (req, res) => {
   }
 });
 
-
-
-// GET /drivers/:driverId/earnings - Get driver earnings
+// GET /drivers/:driverId/earnings
 router.get('/:driverId/earnings', async (req, res) => {
   try {
     const { page = 1, limit = 10, status, earningType, period } = req.query;
@@ -443,7 +375,6 @@ router.get('/:driverId/earnings', async (req, res) => {
     if (status) filter.status = status;
     if (earningType) filter.earningType = earningType;
     
-    // Add period filter
     if (period) {
       const now = new Date();
       let startDate;
@@ -477,7 +408,6 @@ router.get('/:driverId/earnings', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
     
-    // Format trip history
     const tripHistory = earnings.map(earning => ({
       tripId: earning.bookingId?._id || earning._id,
       from: earning.tripDetails?.source || earning.bookingId?.from || 'N/A',
@@ -509,7 +439,7 @@ router.get('/:driverId/earnings', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId/stats - Get driver stats/analytics
+// GET /drivers/:driverId/stats
 router.get('/:driverId/stats', async (req, res) => {
   try {
     const driver = await Driver.findById(req.params.driverId);
@@ -517,13 +447,11 @@ router.get('/:driverId/stats', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
     
-    // Get total earnings from DriverEarning collection
     const earningsStats = await DriverEarning.aggregate([
       { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
       { $group: { _id: null, totalEarnings: { $sum: '$amount' }, totalTrips: { $sum: 1 } } }
     ]);
     
-    // Get total distance from bookings
     const distanceStats = await Booking.aggregate([
       { $match: { driverId: new mongoose.Types.ObjectId(req.params.driverId), status: 'completed' } },
       { $group: { _id: null, totalDistance: { $sum: '$distance' } } }
@@ -547,7 +475,7 @@ router.get('/:driverId/stats', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId/bookings/history - Get driver booking history
+// GET /drivers/:driverId/bookings/history
 router.get('/:driverId/bookings/history', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -584,7 +512,7 @@ router.get('/:driverId/bookings/history', async (req, res) => {
   }
 });
 
-// PATCH /drivers/:driverId/earnings - Update earnings
+// PATCH /drivers/:driverId/earnings
 router.patch('/:driverId/earnings', async (req, res) => {
   try {
     const driver = await Driver.findByIdAndUpdate(
@@ -599,7 +527,7 @@ router.patch('/:driverId/earnings', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/trips - Add trip to history
+// POST /drivers/:driverId/trips
 router.post('/:driverId/trips', async (req, res) => {
   try {
     const earning = new DriverEarning({
@@ -613,8 +541,7 @@ router.post('/:driverId/trips', async (req, res) => {
   }
 });
 
-// POST /drivers/:driverId/complete-trip - Optimized trip completion with transaction
-// POST /drivers/:driverId/complete-trip - Optimized trip completion with transaction
+// POST /drivers/:driverId/complete-trip
 router.post('/:driverId/complete-trip', async (req, res) => {
   const session = await mongoose.startSession();
   
@@ -623,7 +550,6 @@ router.post('/:driverId/complete-trip', async (req, res) => {
       const { tripData, endLatitude, endLongitude } = req.body;
       const driverId = req.params.driverId;
       
-      // Create earning record with end coordinates
       const earning = new DriverEarning({
         ...tripData,
         driverId,
@@ -632,7 +558,6 @@ router.post('/:driverId/complete-trip', async (req, res) => {
       });
       await earning.save({ session });
       
-      // Update driver stats atomically
       await Driver.findByIdAndUpdate(
         driverId,
         {
@@ -657,8 +582,7 @@ router.post('/:driverId/complete-trip', async (req, res) => {
   }
 });
 
-
-// PATCH /drivers/:driverId/stats - Update trip statistics
+// PATCH /drivers/:driverId/stats
 router.patch('/:driverId/stats', async (req, res) => {
   try {
     const { totalTrips, totalEarnings, lastTripDate } = req.body;
@@ -674,7 +598,7 @@ router.patch('/:driverId/stats', async (req, res) => {
   }
 });
 
-// GET /drivers/:driverId/dashboard - Driver dashboard
+// GET /drivers/:driverId/dashboard
 router.get('/:driverId/dashboard', async (req, res) => {
   try {
     const { driverId } = req.params;
@@ -684,7 +608,6 @@ router.get('/:driverId/dashboard', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
 
-    // Get today's stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -693,7 +616,6 @@ router.get('/:driverId/dashboard', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' }, trips: { $sum: 1 } } }
     ]);
 
-    // Get active booking
     const activeBooking = await Booking.findOne({
       driverId,
       status: { $in: ['accepted', 'confirmed', 'started'] }
@@ -721,7 +643,7 @@ router.get('/:driverId/dashboard', async (req, res) => {
   }
 });
 
-// PATCH /drivers/:driverId/status - Update driver status
+// PATCH /drivers/:driverId/status
 router.patch('/:driverId/status', async (req, res) => {
   try {
     const { driverId } = req.params;
@@ -758,7 +680,7 @@ router.patch('/:driverId/status', async (req, res) => {
   }
 });
 
-// GET /drivers/check-exists?phone=:phone - Check driver exists by phone
+// GET /drivers/check-exists
 router.get('/check-exists', async (req, res) => {
   try {
     const { phone } = req.query;

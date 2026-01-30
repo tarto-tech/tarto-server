@@ -55,7 +55,7 @@ const driverSchema = new mongoose.Schema({
   totalEarnings: { type: Number, default: 0 },
   
   currentLocation: {
-    type: { type: String, default: 'Point' },
+    type: { type: String },
     coordinates: [Number]
   },
   
@@ -75,7 +75,5 @@ const driverSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 driverSchema.index({ currentLocation: '2dsphere' });
-
-driverSchema.set('timestamps', true);
 
 module.exports = mongoose.models.Driver || mongoose.model('Driver', driverSchema);
