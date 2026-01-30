@@ -88,7 +88,7 @@ const addressRoutes = require('./routes/addressRoutes');
 const homeVehicleRoutes = require('./routes/homeVehicleRoutes');
 const appRoutes = require('./routes/appRoutes');
 const driverRoutes = require('./routes/driverRoutes');
-const driverRegistrationRoutes = require('./routes/driverRegistrationRoutes');
+const authRoutes = require('./routes/authRoutes');
 const proxyRoutes = require('./routes/proxyRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
 
@@ -101,7 +101,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/Homevehicles', homeVehicleRoutes);
-app.use('/api/drivers', driverRegistrationRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/proxy', proxyRoutes);
