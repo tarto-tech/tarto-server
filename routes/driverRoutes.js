@@ -706,4 +706,21 @@ router.get('/check-exists', async (req, res) => {
   }
 });
 
+// GET /drivers/pending-verification/list
+router.get('/pending-verification/list', async (req, res) => {
+  try {
+    const drivers = await Driver.find({ status: 'pending_verification' })
+      .select('name phone email agencyName panNumber licenseNumber vehicleDetails documents status createdAt')
+      .sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: drivers,
+      count: drivers.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
