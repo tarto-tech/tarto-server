@@ -15,7 +15,7 @@ const driverSchema = new mongoose.Schema({
   vehicleDetails: {
     vehicleNumber: { type: String },
     vehicleType: { type: String },
-    type: { type: String, enum: ['auto', 'bike', 'car'] },
+    type: { type: String, enum: ['auto', 'bike', 'car', 'hatchback', 'sedan', 'suv'] },
     number: { type: String },
     registrationNumber: { type: String },
     model: { type: String },
@@ -23,44 +23,40 @@ const driverSchema = new mongoose.Schema({
   },
   
   documents: {
-    license: {
-      number: { type: String },
-      expiryDate: { type: Date },
-      imageUrl: { type: String },
-      status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
+    aadhar: {
+      frontUrl: { type: String },
+      backUrl: { type: String },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
     },
-    licenseNumber: { type: String },
+    license: {
+      url: { type: String },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+    },
     rc: {
-      number: { type: String },
-      imageUrl: { type: String },
-      status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
+      url: { type: String },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
     },
     insurance: {
-      number: { type: String },
-      expiryDate: { type: Date },
-      imageUrl: { type: String },
-      status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
-    },
-    aadhar: {
-      number: { type: String },
-      imageUrl: { type: String },
-      status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
+      url: { type: String },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
     }
   },
   
   status: { 
     type: String, 
-    default: 'pending_verification', 
-    enum: ['pending_verification', 'pending', 'approved', 'active', 'inactive', 'busy', 'rejected', 'suspended'] 
+    default: 'pending', 
+    enum: ['pending', 'approved', 'active', 'inactive', 'busy', 'rejected', 'suspended'] 
   },
+  
+  rejectionReason: { type: String },
   
   rating: { type: Number, default: 0 },
   totalTrips: { type: Number, default: 0 },
   totalEarnings: { type: Number, default: 0 },
   
-  location: {
+  currentLocation: {
     type: { type: String, default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] }
+    coordinates: [Number]
   },
   
   isOnline: { type: Boolean, default: false },
@@ -78,6 +74,8 @@ const driverSchema = new mongoose.Schema({
   lastActiveAt: { type: Date }
 }, { timestamps: true });
 
-driverSchema.index({ location: '2dsphere' });
+driverSchema.index({ currentLocation: '2dsphere' });
+
+driverSchema.set('timestamps', true);
 
 module.exports = mongoose.models.Driver || mongoose.model('Driver', driverSchema);
